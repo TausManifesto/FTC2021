@@ -75,7 +75,7 @@ public class AutonomousMethods extends LinearOpMode {
     public Bitmap bmp;
 
     public Hardware robot = new Hardware(true);
-    private final double gearRatio = 2;
+    private final double gearRatio = 2;//CHANGE TO 1
     private final double wheelDiameter = 3.78;
     private final double wheelCircumference = wheelDiameter*Math.PI;
     private final double encoderCounts = 383.6*4; //counts per one rotation of output shaft
@@ -188,14 +188,32 @@ public class AutonomousMethods extends LinearOpMode {
         double power;
         if (right){
             while (getHeading()<angle){
-                power = errorToPower(angle-getHeading(), maxValue);
+                power = errorToPower(angle-getHeading(), maxValue, 1);
                 setPowerOfMotorsTo(power, power , -power , -power );
             }
         }
         else {
             while (getHeading()<angle){
-                power = errorToPower(Math.abs(angle-getHeading()), maxValue);
+                power = errorToPower(Math.abs(angle-getHeading()), maxValue, 1);
                 setPowerOfMotorsTo(-power, -power , power , power );
+            }
+        }
+        setAllMotorsTo(0);
+    }
+    //going to any angle, doesn't work at 180
+    public void toAngle2(double power, double angle){
+        runWithEncoders();
+        boolean right = (getHeading()-angle)>0;
+        if (right){
+            setPowerOfMotorsTo(power, power , -power , -power );
+            while (getHeading()>angle){
+                idle();
+            }
+        }
+        else {
+            setPowerOfMotorsTo(-power, -power , power , power );
+            while (getHeading()<angle){
+                idle();
             }
         }
         setAllMotorsTo(0);
@@ -251,6 +269,11 @@ public class AutonomousMethods extends LinearOpMode {
         robot.frontLeftMotor.setTargetPosition(fl);
     }
     //gets the angle in degrees
+    public double getHeading2() {
+        Orientation angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        return angles.firstAngle-resetAngle; // left [0,-180] right[0,180]
+    }
+    //gets the angle in degrees
     public double getHeading() {
         Orientation angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         return -angles.firstAngle-resetAngle; // left [0,-180] right[0,180]
@@ -289,9 +312,9 @@ public class AutonomousMethods extends LinearOpMode {
         currentXPosition=x;
     }
     //takes error and finds appropriate speed
-    private double errorToPower(double error, double maxValue){
+    private double errorToPower(double error, double maxValue, double scale){
         //proportional
-        double speed = error/maxValue;
+        double speed = (error/maxValue)*scale;
         return speed;
     }
 
@@ -317,14 +340,16 @@ public class AutonomousMethods extends LinearOpMode {
         robot.shooter.setPower(power);
     }
     //shooter adjust
-    public double shooterPowerIncrement(double current, double goal, double maxValue) {
+    public double shooterPowerIncrement(double current, double goal, double maxValue, double scale) {
         double error = goal - current;
-        return errorToPower(error, maxValue);
+        return errorToPower(error, maxValue, scale);
     }
     //shoots all three rings at the same angle
     public void shoot(double a, double power, boolean auto){
         setShooterPower(power);
         toAngle(.2, a);
+        setIntakePower(-.2);
+        sleep(500);
         controlLaunchServo(0);
         if (auto){
             setIntakePower(.5);
@@ -336,7 +361,7 @@ public class AutonomousMethods extends LinearOpMode {
         sleep(3000);
         controlLaunchServo(1);
         setIntakePower(0);
-        setShooterPower(power-.1);
+        setShooterPower(power-.15);
     }
     //shoots all three rings at 3 different angles
     public void powerShot(double a1, double a2, double a3, double power1, double power2, double power3, double powerE){
