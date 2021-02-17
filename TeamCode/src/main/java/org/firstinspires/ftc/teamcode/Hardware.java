@@ -65,8 +65,6 @@ public class Hardware {
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
         intake.setDirection(DcMotor.Direction.REVERSE);
         shooter.setDirection(DcMotor.Direction.REVERSE);
-        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
 
         if(encoder) {
             // May use RUN_USING_ENCODERS if encoders are installed
@@ -75,16 +73,16 @@ public class Hardware {
             backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-            //intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            //shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             frontLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             frontRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             backLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             backRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-            //intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            //shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         }
         else{
             frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -92,8 +90,8 @@ public class Hardware {
             backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-            //intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            //shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
 
@@ -102,16 +100,16 @@ public class Hardware {
         backLeftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        //intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         frontLeftMotor.setPower(0);
         frontRightMotor.setPower(0);
         backLeftMotor.setPower(0);
         backRightMotor.setPower(0);
 
-        //intake.setPower(0);
-        //shooter.setPower(0);
+        intake.setPower(0);
+        shooter.setPower(0);
 
 
 

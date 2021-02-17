@@ -75,16 +75,17 @@ public class AutonomousMethods extends LinearOpMode {
     public Bitmap bmp;
 
     public Hardware robot = new Hardware(true);
-    private final double gearRatio = 2;//CHANGE TO 1
+    private final double gearRatio = 1;
     private final double wheelDiameter = 3.78;
-    private final double wheelCircumference = wheelDiameter*Math.PI;
-    private final double encoderCounts = 383.6*4; //counts per one rotation of output shaft
-    double countsPerRotation = encoderCounts/gearRatio;
-    private double currentXPosition = 0;
-    private double currentYPosition = 0;
+    public final double wheelCircumference = wheelDiameter*Math.PI;
+    public final double encoderCounts = 383.6; //counts per one rotation of output shaft
+    double countsPerRotation = encoderCounts*gearRatio;
+    public double currentXPosition = 0;
+    public double currentYPosition = 0;
 
     public double resetAngle = 0;
     public ElapsedTime runtime = new ElapsedTime();
+    public ElapsedTime runtime2 = new ElapsedTime();
 
     public void initializeRobot() {
         robot.initializeHardware(hardwareMap);
@@ -98,7 +99,7 @@ public class AutonomousMethods extends LinearOpMode {
         initializeFrameQueue(2);
         AppUtil.getInstance().ensureDirectoryExists(captureDirectory);
         if (!OpenCVLoader.initDebug()) {
-            error("Error: Cannot load OpenCV LIbrary");
+            error("Error: Cannot load OpenCV Library");
         } else {
             telemetry.addData(">", "Loaded OpenCV");
             telemetry.update();
@@ -129,9 +130,9 @@ public class AutonomousMethods extends LinearOpMode {
         int counts = (int) ((distance / (wheelCircumference)) * (countsPerRotation));
         setTargetPosition(counts, counts, counts, counts);
         runToPosition();
-        setAllMotorsTo(power);
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
-            idle();
+            double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
+            setAllMotorsTo(errorToPower((distance-distanceGone), 24, power, .2));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -142,9 +143,9 @@ public class AutonomousMethods extends LinearOpMode {
         int counts = (int) -((distance / (wheelCircumference)) * (countsPerRotation));
         setTargetPosition(counts, counts, counts, counts);
         runToPosition();
-        setAllMotorsTo(-power);
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
-            idle();
+            double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
+            setAllMotorsTo(-errorToPower((distance-distanceGone), 24, power, .2));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -155,9 +156,10 @@ public class AutonomousMethods extends LinearOpMode {
         int counts = (int) (((distance / (wheelCircumference)) * (countsPerRotation))*Math.sqrt(2));//divide by root 2
         setTargetPosition(counts, -counts, -counts, counts);
         runToPosition();
-        setPowerOfMotorsTo(power, -power , -power , power );
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
-            idle();
+            double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .2);
+            setPowerOfMotorsTo(power2, -power2 , -power2 , power2 );
         }
         stopAndResetEncoders();
     }
@@ -167,53 +169,32 @@ public class AutonomousMethods extends LinearOpMode {
         int counts = (int) (((distance / (wheelCircumference)) * (countsPerRotation))*Math.sqrt(2));//divide by root 2
         setTargetPosition(-counts, counts, counts, -counts);
         runToPosition();
-        setPowerOfMotorsTo(-power, power , power , -power );
+
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
-            idle();
+            double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .2);
+            setPowerOfMotorsTo(-power2, power2 , power2 , -power2 );
         }
         stopAndResetEncoders();
     }
-    //going to any angle, doesn't work at 180
-    public void toAngle(double maxValue, double angle){
+    //going to any angle
+    public void toAngle(double angle){
         runWithEncoders();
-        resetAngle = getHeading();
-        angle-=resetAngle;
-        if (angle>180){
-            angle-=360;
-        }
-        if (angle<180){
-            angle+=360;
-        }
-        boolean right = angle>0;
+        double calcAngle = getHeading()-angle;
+        boolean right = calcAngle<0;
         double power;
         if (right){
-            while (getHeading()<angle){
-                power = errorToPower(angle-getHeading(), maxValue, 1);
+            while (calcAngle<0){
+                power = errorToPower(angle-getHeading(), 90, 1, .1);
                 setPowerOfMotorsTo(power, power , -power , -power );
+                calcAngle = adjust(getHeading()-angle);
             }
         }
         else {
-            while (getHeading()<angle){
-                power = errorToPower(Math.abs(angle-getHeading()), maxValue, 1);
+            while (calcAngle>0){
+                power = errorToPower(Math.abs(angle-getHeading()), 90, 1, .1);
                 setPowerOfMotorsTo(-power, -power , power , power );
-            }
-        }
-        setAllMotorsTo(0);
-    }
-    //going to any angle, doesn't work at 180
-    public void toAngle2(double power, double angle){
-        runWithEncoders();
-        boolean right = (getHeading()-angle)>0;
-        if (right){
-            setPowerOfMotorsTo(power, power , -power , -power );
-            while (getHeading()>angle){
-                idle();
-            }
-        }
-        else {
-            setPowerOfMotorsTo(-power, -power , power , power );
-            while (getHeading()<angle){
-                idle();
+                calcAngle = adjust(getHeading()-angle);
             }
         }
         setAllMotorsTo(0);
@@ -240,15 +221,15 @@ public class AutonomousMethods extends LinearOpMode {
         robot.frontRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.frontLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
-    //set mode to run with encodrs
+    //set mode to run with encoders
     public void runWithEncoders() {
         robot.backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.frontLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
-    //set mode to run withouth encodrs
-    public void runWithouthEncoders() {
+    //set mode to run without encoders
+    public void runWithoutEncoders() {
         robot.backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -269,28 +250,47 @@ public class AutonomousMethods extends LinearOpMode {
         robot.frontLeftMotor.setTargetPosition(fl);
     }
     //gets the angle in degrees
-    public double getHeading2() {
-        Orientation angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        return angles.firstAngle-resetAngle; // left [0,-180] right[0,180]
-    }
-    //gets the angle in degrees
     public double getHeading() {
         Orientation angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         return -angles.firstAngle-resetAngle; // left [0,-180] right[0,180]
     }
-    //update position
-    public void updatePosition(double distance, double angle) {
-        currentXPosition += Math.sin(angle) * distance;
-        currentYPosition += Math.cos(angle) * distance;
+    //adjusting heading on a scale of [-180,180]
+    public double adjust(double angle) {
+        if (angle>180){
+            angle-=360;
+        }
+        if (angle<-180){
+            angle+=360;
+        }
+        return angle;
+    }
+    //adjusting heading on a scale of [0, 2pi]
+    public double adjust2(double angle) {
+        if (angle > Math.PI/2) {
+            angle = angle + (5*Math.PI / 2);
+        }
+        else{
+            angle = angle+Math.PI/2;
+        }
+        return angle;
     }
     //goes to a position and angle on the field
-    public void goToPosition(double power, double x, double y, double angle) {
-        double deltaX = currentXPosition - x; //required change in x position from current to desired
-        double deltaY = currentYPosition - y; //required change in y position from current to desired
-        double theta = Math.atan(deltaY / deltaX) + getHeading() + 45;
+    public void goToPosition(double power, double angle, double currentX, double currentY, double x, double y) {
+        runWithEncoders();
+
+        double deltaX =  x-currentX; //required change in x position from current to desired
+        double deltaY = y-currentY; //required change in y position from current to desired
+        double gyroAngle = adjust2(getHeading() * Math.PI / 180); //Converts gyroAngle into radians
+        double angleOfTravel = Math.atan2(deltaY, deltaX);
+        double theta =  angleOfTravel-gyroAngle;
+
+        //changing from a [+] with | being y and -- being x to an [X] with \ being y and / being x (forward is forward)
+        double calculationAngle = theta - (Math.PI / 4);
+
+        //magnitude of movement using pythagorean theorem
         double distance = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
-        double xDist = Math.cos(theta) * distance;
-        double yDist = Math.sin(theta) * distance;
+        double xDist = Math.cos(calculationAngle) * distance;
+        double yDist = Math.sin(calculationAngle) * distance;
 
         // setting scale factor to the biggest value
         // dividing by this when setting powers will make sure that speeds are in the format 0-1
@@ -299,28 +299,38 @@ public class AutonomousMethods extends LinearOpMode {
         if (yDist > xDist) {
             scaleFactor = yDist;
         }
-        int counts = (int) ((xDist / (wheelDiameter * Math.PI)) * (encoderCounts / gearRatio));
 
-        setPowerOfMotorsTo(yDist / scaleFactor, xDist / scaleFactor, xDist / scaleFactor, yDist / scaleFactor);
-        while(robot.backLeftMotor.getCurrentPosition()<counts){
-            idle();
+        int countsX = (int) ((xDist / (wheelCircumference)) * (countsPerRotation));
+        int countsY = (int) ((yDist / (wheelCircumference)) * (countsPerRotation));
+        setTargetPosition(robot.backLeftMotor.getCurrentPosition()+countsX, robot.frontLeftMotor.getCurrentPosition()+countsY, robot.backRightMotor.getCurrentPosition()+countsY, robot.frontRightMotor.getCurrentPosition()+countsX);
+        runToPosition();
+        while(robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()){
+            double distanceGoneX = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
+            double distanceGoneY = (wheelCircumference) * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
+            double powerX = errorToPower(xDist-distanceGoneX, 24, xDist / scaleFactor, .2);
+            double powerY = errorToPower(yDist-distanceGoneY, 24, yDist / scaleFactor, .2);
+            setPowerOfMotorsTo(powerX, powerY, powerY, powerX);
         }
         //setting all motor powers to 0 (stopping)
         setAllMotorsTo(0);
-        stopAndResetEncoders();
+        toAngle(angle);
         currentYPosition=y;
         currentXPosition=x;
     }
     //takes error and finds appropriate speed
-    private double errorToPower(double error, double maxValue, double scale){
+    private double errorToPower(double error, double scale, double maxValue, double minValue){
         //proportional
-        double speed = (error/maxValue)*scale;
+        double speed = ((error/scale)*(maxValue-minValue))+minValue;
+        if (speed>maxValue){
+            speed = maxValue;
+        }
         return speed;
     }
 
-    //game specific
+    //ultimate goal specific
     //sets power of intake
     public void setIntakePower(double power){
+        robot.intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.intake.setPower(power);
     }
     //set servo position
@@ -339,35 +349,24 @@ public class AutonomousMethods extends LinearOpMode {
     public void setShooterPower(double power){
         robot.shooter.setPower(power);
     }
-    //shooter adjust
-    public double shooterPowerIncrement(double current, double goal, double maxValue, double scale) {
-        double error = goal - current;
-        return errorToPower(error, maxValue, scale);
-    }
     //shoots all three rings at the same angle
-    public void shoot(double a, double power, boolean auto){
+    public void shoot(double a, double power){
+        robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         setShooterPower(power);
-        toAngle(.2, a);
-        setIntakePower(-.2);
-        sleep(500);
+        toAngle(a);
         controlLaunchServo(0);
-        if (auto){
-            setIntakePower(.5);
-        }
-        else {
-            setIntakePower(.35);
-        }
-        setShooterPower(power+.15);
+        setIntakePower(.5);
         sleep(3000);
         controlLaunchServo(1);
         setIntakePower(0);
-        setShooterPower(power-.15);
     }
     //shoots all three rings at 3 different angles
-    public void powerShot(double a1, double a2, double a3, double power1, double power2, double power3, double powerE){
-        setShooterPower(power1);
+    public void powerShot(double a1, double a2, double a3, double power, double powerE){
+        robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        setShooterPower(power);
+        sleep(1000);
         setIntakePower(1);
-        toAngle(.2, a1);
+        toAngle(a1);
         setIntakePower(0);
         controlLaunchServo(0);
         sleep(500);
@@ -377,8 +376,7 @@ public class AutonomousMethods extends LinearOpMode {
         setIntakePower(1);
         sleep(1000);
 
-        setShooterPower(power2);
-        toAngle(.1, a2);
+        toAngle(a2);
         setIntakePower(0);
         controlLaunchServo(0);
         sleep(500);
@@ -388,8 +386,7 @@ public class AutonomousMethods extends LinearOpMode {
         setIntakePower(1);
         sleep(1000);
 
-        setShooterPower(power3);
-        toAngle(.1, a3);
+        toAngle(a3);
         setIntakePower(0);
         controlLaunchServo(0);
         sleep(500);
@@ -532,7 +529,7 @@ public class AutonomousMethods extends LinearOpMode {
         Core.inRange(input, new Scalar(0, 100, 0),new Scalar(35, 360, 360),input);
 
         int pixels = Core.countNonZero(input);
-        telemetry.addData("pixels", pixels);
+        //telemetry.addData("pixels", pixels);
         //telemetry.addData("width=",w);
         //telemetry.addData("height=",h);
         if(pixels > 4000){

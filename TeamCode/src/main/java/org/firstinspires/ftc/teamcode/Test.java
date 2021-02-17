@@ -4,7 +4,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-
+@Disabled
 @Autonomous(name = "test run", group = "Tau")
 public class Test extends AutonomousMethods {
 
