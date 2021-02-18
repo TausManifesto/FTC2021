@@ -132,7 +132,7 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(errorToPower((distance-distanceGone), 24, power, .2));
+            setAllMotorsTo(errorToPower((distance-distanceGone), 24, power, .15));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -144,8 +144,8 @@ public class AutonomousMethods extends LinearOpMode {
         setTargetPosition(counts, counts, counts, counts);
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
-            double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(-errorToPower((distance-distanceGone), 24, power, .2));
+            double distanceGone = (wheelCircumference) * (-robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
+            setAllMotorsTo(-errorToPower((distance-distanceGone), 24, power, .15));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -153,12 +153,12 @@ public class AutonomousMethods extends LinearOpMode {
     //strafing left distance (inch) with power [0, 1]
     public void strafeLeft(double power, double distance) {
         runWithEncoders();
-        int counts = (int) (((distance / (wheelCircumference)) * (countsPerRotation))*Math.sqrt(2));//divide by root 2
+        int counts = (int) (((distance / wheelCircumference) * countsPerRotation)*Math.sqrt(2)*.85);
         setTargetPosition(counts, -counts, -counts, counts);
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            double power2 = errorToPower((distance-distanceGone), 24, power, .2);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .15);
             setPowerOfMotorsTo(power2, -power2 , -power2 , power2 );
         }
         stopAndResetEncoders();
@@ -166,13 +166,13 @@ public class AutonomousMethods extends LinearOpMode {
     //strafing right distance (inch) with power [0, 1]
     public void strafeRight(double power, double distance) {
         runWithEncoders();
-        int counts = (int) (((distance / (wheelCircumference)) * (countsPerRotation))*Math.sqrt(2));//divide by root 2
+        int counts = (int) (((distance / wheelCircumference) * countsPerRotation)*Math.sqrt(2)*.85);
         setTargetPosition(-counts, counts, counts, -counts);
         runToPosition();
 
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
-            double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            double power2 = errorToPower((distance-distanceGone), 24, power, .2);
+            double distanceGone = (wheelCircumference) * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .15);
             setPowerOfMotorsTo(-power2, power2 , power2 , -power2 );
         }
         stopAndResetEncoders();
@@ -185,7 +185,7 @@ public class AutonomousMethods extends LinearOpMode {
         double power;
         if (right){
             while (calcAngle<0){
-                power = errorToPower(angle-getHeading(), 90, 1, .1);
+                power = errorToPower(angle-getHeading(), 90, 1, .05);
                 setPowerOfMotorsTo(power, power , -power , -power );
                 calcAngle = adjust(getHeading()-angle);
             }
@@ -266,11 +266,11 @@ public class AutonomousMethods extends LinearOpMode {
     }
     //adjusting heading on a scale of [0, 2pi]
     public double adjust2(double angle) {
-        if (angle > Math.PI/2) {
-            angle = angle + (5*Math.PI / 2);
+        if (angle < Math.PI/2) {
+            angle = -angle + (Math.PI / 2);
         }
         else{
-            angle = angle+Math.PI/2;
+            angle = -angle+(5*Math.PI)/2;
         }
         return angle;
     }

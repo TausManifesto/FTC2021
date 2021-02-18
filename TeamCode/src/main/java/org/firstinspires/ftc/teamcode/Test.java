@@ -4,7 +4,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-@Disabled
+
 @Autonomous(name = "test run", group = "Tau")
 public class Test extends AutonomousMethods {
 
@@ -12,7 +12,6 @@ public class Test extends AutonomousMethods {
     public void runOpMode() throws InterruptedException {
 
         telemetry.addLine("Starting RunOpMode");
-        //sleep(5000);
         //initializing robot
         initializeRobot();
         int numRings = findNumRings(bmp);
@@ -20,15 +19,9 @@ public class Test extends AutonomousMethods {
         telemetry.addData("rings", numRings);
         telemetry.update();
 
-        //forward(1, 48);
-        //backward(1, 48);
-        //strafeRight(1, 48);
-        //strafeLeft(1, 48);
-        //toAngle(1, -90);
-        //toAngle(1, 90);
-        //while (true){
-        //    idle();
-        //}
+        runWithEncoders();
+        strafeRight(.1, 24);
+        sleep(100000);
 
 
 

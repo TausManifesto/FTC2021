@@ -32,11 +32,6 @@ public class Teleop2 extends LinearOpMode {
     @Override
     public void runOpMode() {
         method.robot.initializeHardware(hardwareMap);
-        telemetry.addLine("  ._---_. ");
-        telemetry.addLine(" /   _   | ");
-        telemetry.addLine(" |  (8)  | ");
-        telemetry.addLine(" |   ^   / ");
-        telemetry.addLine("  '-...-'");
         telemetry.addLine(magic8());
         telemetry.update();
         telemetry.update();
@@ -87,18 +82,18 @@ public class Teleop2 extends LinearOpMode {
         double scaleFactor = 1;
         double rotationValue = gamepad1.right_stick_x;
         double stickX = gamepad1.left_stick_x;
-        double stickY = gamepad1.left_stick_y;
-        double gyroAngle = method.adjust2(method.getHeading() * Math.PI / 180); //Converts gyroAngle into radians
+        double stickY = -gamepad1.left_stick_y;
+        double gyroAngle = method.getHeading() * Math.PI / 180; //Converts gyroAngle into radians
 
         //Robot Centric
         //gyroAngle = Math.PI / 2;
 
         //inverse tangent of game-pad stick y/ game-pad stick x = angle of joystick
         double joystickAngle = Math.atan2(stickY, stickX);
-        double theta =  joystickAngle-gyroAngle;
+        double theta =  joystickAngle+gyroAngle;
 
         //changing from a [+] with -- being y and | being x to an [X] with \ being y and / being x (left is forward)
-        double calculationAngle = theta + (Math.PI / 4);//-
+        double calculationAngle = theta - ((3*Math.PI) / 4);
 
         //magnitude of movement using pythagorean theorem
         double magnitude = Math.sqrt(Math.pow(stickX, 2) + Math.pow(stickY, 2));
@@ -112,10 +107,10 @@ public class Teleop2 extends LinearOpMode {
         if (yComponent + rotationValue > 1 && yComponent + rotationValue > scaleFactor) {
             scaleFactor = Math.abs(yComponent + rotationValue);
         }
-        method.robot.frontLeftMotor.setPower(((yComponent + rotationValue) / scaleFactor)/multiplier);
-        method.robot.backLeftMotor.setPower(((xComponent + rotationValue) / scaleFactor)/multiplier);//y
-        method.robot.backRightMotor.setPower(((yComponent - rotationValue) / scaleFactor)/multiplier);//x
-        method.robot.frontRightMotor.setPower(((xComponent - rotationValue) / scaleFactor)/multiplier);
+        method.robot.frontLeftMotor.setPower(((xComponent + rotationValue) / scaleFactor)/multiplier);
+        method.robot.backLeftMotor.setPower(((yComponent + rotationValue) / scaleFactor)/multiplier);//y
+        method.robot.backRightMotor.setPower(((xComponent - rotationValue) / scaleFactor)/multiplier);//x
+        method.robot.frontRightMotor.setPower(((yComponent - rotationValue) / scaleFactor)/multiplier);
     }
 
     public void shooter(){
@@ -165,23 +160,13 @@ public class Teleop2 extends LinearOpMode {
     }
     public void shoot(){
         if(gamepad1.right_trigger>.1) {
-            telemetry.addLine("  ._---_. ");
-            telemetry.addLine(" /   _   | ");
-            telemetry.addLine(" |  (8)  | ");
-            telemetry.addLine(" |   ^   / ");
-            telemetry.addLine("  '-...-'");
             telemetry.addLine(magic8());
             telemetry.update();
-            method.shoot(32.5, shooterPower);
+            method.shoot(30, shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad1.left_trigger>.1) {
-            telemetry.addLine("  ._---_. ");
-            telemetry.addLine(" /   _   | ");
-            telemetry.addLine(" |  (8)  | ");
-            telemetry.addLine(" |   ^   / ");
-            telemetry.addLine("  '-...-'");
             telemetry.addLine(magic8());
             telemetry.update();
             method.powerShot(10, 16, 23, .46, shooterPower);
@@ -270,7 +255,12 @@ public class Teleop2 extends LinearOpMode {
         method.currentYPosition = DistY/Math.sqrt(2)+DistX/Math.sqrt(2);
     }
     public String magic8() {
-        int magic8 = (int)Math.random()*(19)+1;
+        telemetry.addLine("  ._-------_. ");
+        telemetry.addLine(" /     _     | ");
+        telemetry.addLine(" |    (8)    | ");
+        telemetry.addLine(" |     ^     / ");
+        telemetry.addLine("  '-.......-'");
+        int magic8 = (int)(Math.random()*(19)+1);
         switch(magic8){
             case 1:
                 return "As I see it, yes.";
