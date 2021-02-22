@@ -24,7 +24,7 @@ public class Teleop extends LinearOpMode {
     boolean dpadPressed = false;
     boolean leftStick = false;
 
-    double shooterPower = .585;
+    double shooterPower = .545;
     double rpm;
     double oldRotations = 0;
     double multiplier = 1;
@@ -57,7 +57,7 @@ public class Teleop extends LinearOpMode {
             telemetry.addData("angle", method.getHeading());
             telemetry.addData("shooter", shooterPower);
             telemetry.addData("rpm", rpm/1);
-            telemetry.addData("position", "[" +method.currentXPosition + ", " + method.currentYPosition + "]");
+            //telemetry.addData("position", "[" +method.currentXPosition + ", " + method.currentYPosition + "]");
             telemetry.update();
             telemetry.clear();
         }
@@ -146,7 +146,7 @@ public class Teleop extends LinearOpMode {
             dpadPressed=true;
         }
         else if(gamepad2.dpad_right && !dpadPressed){
-            shooterPower = .585;
+            shooterPower = .545;
             method.setShooterPower(shooterPower);
             dpadPressed=true;
         }
@@ -163,14 +163,14 @@ public class Teleop extends LinearOpMode {
             telemetry.addLine(magic8());
             telemetry.update();
             telemetry.update();
-            method.shoot(30, shooterPower);
+            method.shoot(32.5, shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad2.left_trigger>.1) {
             telemetry.addLine(magic8());
             telemetry.update();
-            method.powerShot(10, 16, 23, .46, shooterPower);
+            method.powerShot(13, 22, 30, .53, shooterPower);
         }
     }
 

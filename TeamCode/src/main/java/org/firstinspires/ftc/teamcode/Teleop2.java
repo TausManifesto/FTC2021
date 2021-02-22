@@ -56,8 +56,8 @@ public class Teleop2 extends LinearOpMode {
 
             telemetry.addData("angle", method.getHeading());
             telemetry.addData("shooter", shooterPower);
-            telemetry.addData("rpm", rpm/1);
-            telemetry.addData("position", "[" +method.currentXPosition + ", " + method.currentYPosition + "]");
+            //telemetry.addData("rpm", rpm/1);
+            //telemetry.addData("position", "[" +method.currentXPosition + ", " + method.currentYPosition + "]");
             telemetry.update();
             telemetry.clear();
         }
@@ -162,14 +162,15 @@ public class Teleop2 extends LinearOpMode {
         if(gamepad1.right_trigger>.1) {
             telemetry.addLine(magic8());
             telemetry.update();
-            method.shoot(30, shooterPower);
+            method.shoot(32.5, shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad1.left_trigger>.1) {
             telemetry.addLine(magic8());
             telemetry.update();
-            method.powerShot(10, 16, 23, .46, shooterPower);
+            sleep(3000);
+            method.powerShot(-5, 0, 5, .465, shooterPower);
         }
     }
 
@@ -236,7 +237,7 @@ public class Teleop2 extends LinearOpMode {
     }
 
     public void resetAngle() {
-        if (gamepad1.b) {
+        if (gamepad1.x) {
             method.resetAngle = method.getHeading() + method.resetAngle;
         }
     }

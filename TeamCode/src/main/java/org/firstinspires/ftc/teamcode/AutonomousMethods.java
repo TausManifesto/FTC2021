@@ -82,6 +82,7 @@ public class AutonomousMethods extends LinearOpMode {
     double countsPerRotation = encoderCounts*gearRatio;
     public double currentXPosition = 0;
     public double currentYPosition = 0;
+    double max;
 
     public double resetAngle = 0;
     public ElapsedTime runtime = new ElapsedTime();
@@ -112,11 +113,10 @@ public class AutonomousMethods extends LinearOpMode {
             startCamera();
             if (cameraCaptureSession == null) return;
 
+
             telemetry.addData(">", "Press Play to start");
             telemetry.update();
             waitForStart();
-
-
             bmp = frameQueue.poll();
 
         }
@@ -126,26 +126,28 @@ public class AutonomousMethods extends LinearOpMode {
     }
     //moving forward distance (inch) with power [0, 1]
     public void forward(double power, double distance) {
+        max = power* 48;
         runWithEncoders();
         int counts = (int) ((distance / (wheelCircumference)) * (countsPerRotation));
         setTargetPosition(counts, counts, counts, counts);
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(errorToPower((distance-distanceGone), 24, power, .15));
+            setAllMotorsTo(errorToPower((distance-distanceGone), max, power, .3));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
     }
     //moving backward distance (inch) with power [0, 1]
     public void backward(double power, double distance) {
+        max = power* 48;
         runWithEncoders();
         int counts = (int) -((distance / (wheelCircumference)) * (countsPerRotation));
         setTargetPosition(counts, counts, counts, counts);
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (-robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(-errorToPower((distance-distanceGone), 24, power, .15));
+            setAllMotorsTo(-errorToPower((distance-distanceGone), max, power, .3));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -158,7 +160,7 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            double power2 = errorToPower((distance-distanceGone), 24, power, .15);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .3);
             setPowerOfMotorsTo(power2, -power2 , -power2 , power2 );
         }
         stopAndResetEncoders();
@@ -172,7 +174,7 @@ public class AutonomousMethods extends LinearOpMode {
 
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
-            double power2 = errorToPower((distance-distanceGone), 24, power, .15);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .3);
             setPowerOfMotorsTo(-power2, power2 , power2 , -power2 );
         }
         stopAndResetEncoders();
@@ -362,37 +364,36 @@ public class AutonomousMethods extends LinearOpMode {
     }
     //shoots all three rings at 3 different angles
     public void powerShot(double a1, double a2, double a3, double power, double powerE){
-        robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         setShooterPower(power);
-        sleep(1000);
-        setIntakePower(1);
+        sleep(3000);
         toAngle(a1);
         setIntakePower(0);
         controlLaunchServo(0);
         sleep(500);
-        setIntakePower(.2);
+        setIntakePower(.15);
         controlLaunchServo(1);
         sleep(500);
         setIntakePower(1);
-        sleep(1000);
+        setShooterPower(.52);
+        sleep(2000);
 
         toAngle(a2);
         setIntakePower(0);
         controlLaunchServo(0);
         sleep(500);
-        setIntakePower(.2);
+        setIntakePower(.15);
         controlLaunchServo(1);
         sleep(500);
         setIntakePower(1);
-        sleep(1000);
+        setShooterPower(.51);
+        sleep(2500);
 
         toAngle(a3);
         setIntakePower(0);
         controlLaunchServo(0);
         sleep(500);
-        setIntakePower(.5);
-        sleep(1000);
-
+        setIntakePower(.15);
+        sleep(750);
         setShooterPower(powerE);
         controlLaunchServo(1);
         setIntakePower(0);
