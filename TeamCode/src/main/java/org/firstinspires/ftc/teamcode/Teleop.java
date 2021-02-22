@@ -6,7 +6,9 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 
 @TeleOp(name = "Tele-Op", group = "Taus")
@@ -15,7 +17,7 @@ public class Teleop extends LinearOpMode {
 
     public AutonomousMethods method = new AutonomousMethods();
     boolean isAPressed = false;
-    boolean shooterOn = false;
+    boolean shooterOn = true;
     boolean isBPressed = false;
     boolean clawClosed = false;
     boolean isRunning = false;
@@ -24,17 +26,29 @@ public class Teleop extends LinearOpMode {
     boolean dpadPressed = false;
     boolean leftStick = false;
 
-    double shooterPower = .545;
-    double rpm;
+    double shooterRpm = 2750;
+    double powerShotRpm = 2500;
+    double shooterPower = (shooterRpm*28)/60.0;
+    double powerShotPower = (powerShotRpm*28)/60.0;    double rpm = 0;
     double oldRotations = 0;
     double multiplier = 1;
+    double previousY = 0;
+    double previousX = 0;
+
+
+    double p = 5;
+    double i = 0;
+    double d = 0;
+    double f = 0;
+
+    //PIDFCoefficients pid = method.robot.shooter.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
 
     @Override
     public void runOpMode() {
         method.robot.initializeHardware(hardwareMap);
-        telemetry.addLine(magic8());
+        telemetry.addLine(method.magic8());
         telemetry.update();
-        telemetry.update();
+        method.robot.shooter.setVelocityPIDFCoefficients(p,i,d,f);
         waitForStart();
         method.controlLaunchServo(1);
         method.setShooterPower(shooterPower);
@@ -54,10 +68,10 @@ public class Teleop extends LinearOpMode {
             updatePosition();
             resetAngle();
 
-            telemetry.addData("angle", method.getHeading());
-            telemetry.addData("shooter", shooterPower);
-            telemetry.addData("rpm", rpm/1);
-            //telemetry.addData("position", "[" +method.currentXPosition + ", " + method.currentYPosition + "]");
+            telemetry.addData("angle", (int)method.getHeading());
+            telemetry.addData("shooter", (int)shooterPower);
+            telemetry.addData("rpm", (int)rpm);
+            telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
             telemetry.update();
             telemetry.clear();
         }
@@ -67,7 +81,7 @@ public class Teleop extends LinearOpMode {
 
     public void drive(){
         method.runWithEncoders();
-        if (gamepad1.left_stick_button&&!leftStick){
+        if (gamepad1.right_stick_button&&!leftStick){
             if (multiplier==1){
                 multiplier=2;
             }
@@ -114,8 +128,8 @@ public class Teleop extends LinearOpMode {
     }
 
     public void shooter(){
-        method.robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        if(method.runtime2.seconds()>1){
+        //method.robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if(method.runtime2.seconds()>5){
             double newRotations = method.robot.shooter.getCurrentPosition()/28.0;
             double rotations = newRotations - oldRotations;
             double min = method.runtime2.seconds()/60;
@@ -124,53 +138,55 @@ public class Teleop extends LinearOpMode {
             oldRotations = newRotations;
         }
 
-        if(gamepad2.x && !isXPressed){
+        if(gamepad1.x && !isXPressed){
             isXPressed = true;
             if (!shooterOn) {
-              method.setShooterPower(shooterPower);
-              shooterOn = true;
+                method.setShooterPower(shooterPower);
+                shooterOn = true;
             }
             else{
-             method.setShooterPower(0);
-             shooterOn = false;
+                method.setShooterPower(0);
+                shooterOn = false;
             }
         }
-        if(gamepad2.dpad_up && !dpadPressed){
-            shooterPower +=.01;
-            method.setShooterPower(shooterPower);
+        if(gamepad1.dpad_up && !dpadPressed){
+            shooterPower +=(50*28)/60.0;
+            shooterRpm +=50;
+            method.robot.shooter.setVelocity(shooterPower);
             dpadPressed=true;
         }
-        else if(gamepad2.dpad_down && !dpadPressed){
-            shooterPower -=.01;
-            method.setShooterPower(shooterPower);
+        else if(gamepad1.dpad_down && !dpadPressed){
+            shooterPower -=(50*28)/60.0;
+            shooterRpm-=50;
+            method.robot.shooter.setVelocity(shooterPower);
             dpadPressed=true;
         }
-        else if(gamepad2.dpad_right && !dpadPressed){
-            shooterPower = .545;
-            method.setShooterPower(shooterPower);
+        else if(gamepad1.dpad_right && !dpadPressed){
+            shooterPower = (2750*28)/60.0;
+            shooterRpm=2750;
+            method.robot.shooter.setVelocity(shooterPower);
             dpadPressed=true;
         }
 
-        if(!gamepad2.x){
+        if(!gamepad1.x){
             isXPressed = false;
         }
-        if(!gamepad2.dpad_up && !gamepad2.dpad_down && !gamepad2.dpad_right){
+        if(!gamepad1.dpad_up && !gamepad2.dpad_down && !gamepad2.dpad_right){
             dpadPressed = false;
         }
     }
     public void shoot(){
         if(gamepad2.right_trigger>.1) {
-            telemetry.addLine(magic8());
-            telemetry.update();
+            telemetry.addLine(method.magic8());
             telemetry.update();
             method.shoot(32.5, shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad2.left_trigger>.1) {
-            telemetry.addLine(magic8());
+            telemetry.addLine(method.magic8());
             telemetry.update();
-            method.powerShot(13, 22, 30, .53, shooterPower);
+            method.powerShot(0, -5, -10, powerShotPower, shooterPower);
         }
     }
 
@@ -237,70 +253,47 @@ public class Teleop extends LinearOpMode {
         }
     }
     public void goToPosition(){
-
+        if(gamepad1.left_trigger>.1){
+            method.goToPosition(32.5, method.currentXPosition, method.currentYPosition, 100, 100);
+        }
     }
     public void updatePosition(){
         if (gamepad1.left_trigger>.1){
             method.stopAndResetEncoders();
         }
 
-        double rotation = (method.robot.backLeftMotor.getCurrentPosition()-method.robot.frontRightMotor.getCurrentPosition())/2.0;
-        telemetry.addData("rot", rotation);
-        double DistY = (method.wheelCircumference) * ((method.robot.backLeftMotor.getCurrentPosition()-rotation)/method.countsPerRotation);
-        double DistX = (method.wheelCircumference) * ((method.robot.backRightMotor.getCurrentPosition()+rotation)/method.countsPerRotation);
-        method.currentXPosition = (DistX-DistY)/Math.sqrt(2);
-        method.currentYPosition = (DistY+DistX)/Math.sqrt(2);
+        double rotation = (method.robot.backLeftMotor.getCurrentPosition() - method.robot.frontRightMotor.getCurrentPosition()) / 2.0;
+
+        double currentY = method.robot.backLeftMotor.getCurrentPosition()-rotation;
+        double deltaY1 = previousY-currentY;
+
+        double currentX = method.robot.backRightMotor.getCurrentPosition()+rotation;
+        double deltaX1 = previousX-currentX;
+
+        double theta = Math.atan2(deltaY1,deltaX1);
+        //changing from a [+] with | being y and -- being x to an [X] with \ being y and / being x (forward is forward)
+        double rotatedTheta = theta + (Math.PI / 4);
+        double gyroAngle = method.getHeading() * Math.PI / 180; //Converts gyroAngle into radians
+
+        double calculationAngle =  rotatedTheta+gyroAngle;
+
+        double deltaY2 = Math.sin(calculationAngle) * deltaY1 + Math.sin(calculationAngle) * deltaX1;
+        double deltaX2 = Math.cos(calculationAngle) * deltaY1;
+        if((Math.cos(calculationAngle) * deltaY1>0&&Math.cos(calculationAngle) * deltaX1<0)||(Math.cos(calculationAngle) * deltaY1<0&&Math.cos(calculationAngle) * deltaX1>0)) {
+            deltaY2 = Math.sin(calculationAngle) * deltaY1;
+            deltaX2 = Math.cos(calculationAngle) * deltaY1 + Math.cos(calculationAngle) * deltaX1;
+        }
+
+        double DistY = (method.wheelCircumference) * ((deltaY2) / method.countsPerRotation);
+        double DistX = (method.wheelCircumference) * ((deltaX2) / method.countsPerRotation);
+        if(Math.abs(deltaY2)>30) {
+            method.currentXPosition = DistX;
+            previousY = deltaY1;
+        }
+        if(Math.abs(deltaX2)>30) {
+            method.currentYPosition = DistY;
+            previousX = deltaX1;
+        }
     }
 
-    public String magic8() {
-        telemetry.addLine("  ._-------_. ");
-        telemetry.addLine(" /     _     | ");
-        telemetry.addLine(" |    (8)    | ");
-        telemetry.addLine(" |     ^     / ");
-        telemetry.addLine("  '-.......-'");
-        int magic8 = (int)(Math.random()*(19)+1);
-        switch(magic8){
-            case 1:
-                return "As I see it, yes.";
-            case 2:
-                return "Ask again later.";
-            case 3:
-                return "Better not tell you now";
-            case 4:
-                return "Cannot predict now.";
-            case 5:
-                return "Concentrate and ask again.";
-            case 6:
-                return "Don’t count on it.";
-            case 7:
-                return "It is certain.";
-            case 8:
-                return "It is decidedly so.";
-            case 9:
-                return "Most likely.";
-            case 10:
-                return "My reply is no.";
-            case 11:
-                return "My sources say no.";
-            case 12:
-                return "Outlook not so good.";
-            case 13:
-                return "Outlook good.";
-            case 14:
-                return "Reply hazy, try again.";
-            case 15:
-                return "Signs point to yes.";
-            case 16:
-                return "Very doubtful.";
-            case 17:
-                return "Without a doubt.";
-            case 18:
-                return "Yes.";
-            case 19:
-                return "You may rely on it.";
-            case 20:
-                return "Yes – definitely.";
-        }
-        return "error";
-    }
 }

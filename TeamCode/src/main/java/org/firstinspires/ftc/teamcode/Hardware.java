@@ -5,6 +5,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -22,7 +23,7 @@ public class Hardware {
     public Servo clawServo = null;
     public Servo armServo = null;
     public DcMotor intake = null;
-    public DcMotor shooter = null;
+    public DcMotorEx shooter = null;
     public boolean encoder;
     public BNO055IMU imu; //inertial measurement unit
 
@@ -53,7 +54,7 @@ public class Hardware {
         armServo = hwMap.servo.get("arm");
         barrierServo = hwMap.servo.get("barrier_servo");
         intake = hwMap.dcMotor.get("intake");
-        shooter = hwMap.dcMotor.get("shooter");
+        shooter = hwMap.get(DcMotorEx.class, "shooter");
 
 
         // Initialize Motors
@@ -64,7 +65,7 @@ public class Hardware {
         backLeftMotor.setDirection(DcMotor.Direction.FORWARD);
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
         intake.setDirection(DcMotor.Direction.REVERSE);
-        shooter.setDirection(DcMotor.Direction.REVERSE);
+        shooter.setDirection(DcMotorEx.Direction.REVERSE);
 
         if(encoder) {
             // May use RUN_USING_ENCODERS if encoders are installed
@@ -91,7 +92,7 @@ public class Hardware {
             backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
             intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            shooter.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         }
 
 
@@ -101,7 +102,7 @@ public class Hardware {
         backRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shooter.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         frontLeftMotor.setPower(0);
         frontRightMotor.setPower(0);

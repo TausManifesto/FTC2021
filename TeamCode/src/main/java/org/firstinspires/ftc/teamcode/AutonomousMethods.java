@@ -112,11 +112,6 @@ public class AutonomousMethods extends LinearOpMode {
 
             startCamera();
             if (cameraCaptureSession == null) return;
-
-
-            telemetry.addData(">", "Press Play to start");
-            telemetry.update();
-            waitForStart();
             bmp = frameQueue.poll();
 
         }
@@ -133,7 +128,7 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(errorToPower((distance-distanceGone), max, power, .3));
+            setAllMotorsTo(errorToPower((distance-distanceGone-6), max, power, .3));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -147,7 +142,7 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (-robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(-errorToPower((distance-distanceGone), max, power, .3));
+            setAllMotorsTo(-errorToPower((distance-distanceGone-6), max, power, .3));
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -277,17 +272,17 @@ public class AutonomousMethods extends LinearOpMode {
         return angle;
     }
     //goes to a position and angle on the field
-    public void goToPosition(double power, double angle, double currentX, double currentY, double x, double y) {
+    public void goToPosition(double angle, double currentX, double currentY, double x, double y) {
         runWithEncoders();
 
         double deltaX =  x-currentX; //required change in x position from current to desired
         double deltaY = y-currentY; //required change in y position from current to desired
-        double gyroAngle = adjust2(getHeading() * Math.PI / 180); //Converts gyroAngle into radians
+        double gyroAngle = getHeading() * Math.PI / 180; //Converts gyroAngle into radians
         double angleOfTravel = Math.atan2(deltaY, deltaX);
-        double theta =  angleOfTravel-gyroAngle;
+        double theta =  angleOfTravel+gyroAngle;
 
         //changing from a [+] with | being y and -- being x to an [X] with \ being y and / being x (forward is forward)
-        double calculationAngle = theta - (Math.PI / 4);
+        double calculationAngle = theta + (Math.PI / 4);
 
         //magnitude of movement using pythagorean theorem
         double distance = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
@@ -309,8 +304,8 @@ public class AutonomousMethods extends LinearOpMode {
         while(robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()){
             double distanceGoneX = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
             double distanceGoneY = (wheelCircumference) * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
-            double powerX = errorToPower(xDist-distanceGoneX, 24, xDist / scaleFactor, .2);
-            double powerY = errorToPower(yDist-distanceGoneY, 24, yDist / scaleFactor, .2);
+            double powerX = errorToPower(xDist-distanceGoneX, 24, xDist / scaleFactor, .3);
+            double powerY = errorToPower(yDist-distanceGoneY, 24, yDist / scaleFactor, .3);
             setPowerOfMotorsTo(powerX, powerY, powerY, powerX);
         }
         //setting all motor powers to 0 (stopping)
@@ -353,50 +348,89 @@ public class AutonomousMethods extends LinearOpMode {
     }
     //shoots all three rings at the same angle
     public void shoot(double a, double power){
-        robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        setShooterPower(power);
         toAngle(a);
         controlLaunchServo(0);
-        setIntakePower(.5);
-        sleep(3000);
+        setIntakePower(.75);
+        sleep(1000);
         controlLaunchServo(1);
         setIntakePower(0);
     }
     //shoots all three rings at 3 different angles
     public void powerShot(double a1, double a2, double a3, double power, double powerE){
-        setShooterPower(power);
-        sleep(3000);
+        robot.shooter.setVelocity(power);
         toAngle(a1);
         setIntakePower(0);
         controlLaunchServo(0);
-        sleep(500);
         setIntakePower(.15);
         controlLaunchServo(1);
         sleep(500);
         setIntakePower(1);
         setShooterPower(.52);
-        sleep(2000);
 
         toAngle(a2);
         setIntakePower(0);
         controlLaunchServo(0);
-        sleep(500);
         setIntakePower(.15);
         controlLaunchServo(1);
         sleep(500);
         setIntakePower(1);
         setShooterPower(.51);
-        sleep(2500);
 
         toAngle(a3);
         setIntakePower(0);
         controlLaunchServo(0);
-        sleep(500);
         setIntakePower(.15);
-        sleep(750);
-        setShooterPower(powerE);
+        sleep(500);
+        robot.shooter.setVelocity(powerE);
         controlLaunchServo(1);
         setIntakePower(0);
+    }
+    //magic stuff
+    public String magic8() {
+        int magic8 = (int)(Math.random()*(19)+1);
+        switch(magic8){
+            case 1:
+                return "As I see it, yes.";
+            case 2:
+                return "Ask again later.";
+            case 3:
+                return "Better not tell you now";
+            case 4:
+                return "Cannot predict now.";
+            case 5:
+                return "Concentrate and ask again.";
+            case 6:
+                return "Don’t count on it.";
+            case 7:
+                return "It is certain.";
+            case 8:
+                return "It is decidedly so.";
+            case 9:
+                return "Most likely.";
+            case 10:
+                return "My reply is no.";
+            case 11:
+                return "My sources say no.";
+            case 12:
+                return "Outlook not so good.";
+            case 13:
+                return "Outlook good.";
+            case 14:
+                return "Reply hazy, try again.";
+            case 15:
+                return "Signs point to yes.";
+            case 16:
+                return "Very doubtful.";
+            case 17:
+                return "Without a doubt.";
+            case 18:
+                return "Yes.";
+            case 19:
+                return "You may rely on it.";
+            case 20:
+                return "Yes – definitely.";
+        }
+        return "error";
     }
 
     //Vision

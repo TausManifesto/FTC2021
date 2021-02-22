@@ -18,10 +18,7 @@ public class Test extends AutonomousMethods {
         bmp.recycle();
         telemetry.addData("rings", numRings);
         telemetry.update();
-
         runWithEncoders();
-        strafeRight(.1, 24);
-        sleep(100000);
 
 
 

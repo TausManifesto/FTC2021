@@ -21,6 +21,9 @@ public class RedLeft extends AutonomousMethods {
         telemetry.addData("rings", numberOfRings);
         telemetry.update();
         bmp.recycle();
+        magic8();
+
+        waitForStart();
 
         stopAndResetEncoders();
 
@@ -30,10 +33,10 @@ public class RedLeft extends AutonomousMethods {
 
         //shoot
         setIntakePower(1);
-        setShooterPower(.585);
-        forward(.5, a*(2.5)+3);
+        setShooterPower(.545);
+        forward(1, a*(2.5)+3);
         setIntakePower(0);
-        shoot(32.5, .585);
+        shoot(32.5, .545);
         setShooterPower(0);
         toAngle(0);
 
@@ -41,7 +44,7 @@ public class RedLeft extends AutonomousMethods {
             case 0:
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(.5,  (a*.5)-8);//forward
+                forward(1,  (a*.5)-8);//forward
                 strafeRight(.5, 18);//right
                 //drop wobble goal
                 controlArmServo(1);//down
@@ -52,7 +55,7 @@ public class RedLeft extends AutonomousMethods {
                 //Picking up 2nd Wobble goal
                 //move back
                 strafeLeft(.5, 12);//left
-                backward(.5, (a*2.5)-4);//back
+                backward(1, (a*2.5)-4);//back
                 //arm down
                 controlArmServo(1);//down
                 sleep(500);
@@ -63,7 +66,7 @@ public class RedLeft extends AutonomousMethods {
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(.5, (a*2.5)+4);//forward
+                forward(1, (a*2.5)+4);//forward
                 strafeRight(.5, 6);//right
                 //drop wobble goal
                 controlArmServo(1);//down
@@ -77,7 +80,7 @@ public class RedLeft extends AutonomousMethods {
             case 1:
                 //Dropping 1st Wobble Goal
                 //move to square
-                forward(.5, (a*1.5)-8);
+                forward(1, (a*1.5)-8);
                 //drop wobble goal
                 controlArmServo(1);//move down
                 sleep(500);
@@ -86,7 +89,7 @@ public class RedLeft extends AutonomousMethods {
 
                 //Picking up 2nd Wobble goal
                 //move back
-                backward(.5, (a*3.5)-4);
+                backward(1, (a*3.5)-4);
                 //arm down
                 controlArmServo(1);//move down
                 strafeRight(.5, .5*a);
@@ -97,7 +100,7 @@ public class RedLeft extends AutonomousMethods {
                 //Dropping 2nd Wobble goal
                 //forward
                 strafeLeft(.5, .75*a);
-                forward(.75, (a*3.5)+4);
+                forward(1, (a*3.5)+4);
                 //drop wobble goal
                 controlArmServo(1);//move down
                 sleep(1000);
@@ -111,7 +114,7 @@ public class RedLeft extends AutonomousMethods {
             case 4:
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(.75,  (a*2.5)-8);//forward
+                forward(1,  (a*2.5)-8);//forward
                 strafeRight(.5, 18);//right
                 //drop wobble goal
                 controlArmServo(1);//down
@@ -123,7 +126,7 @@ public class RedLeft extends AutonomousMethods {
                 //move back
                 strafeLeft(.5, 18);//left
                 toAngle(0);
-                backward(.75, (a*4.5)-4);//back
+                backward(1, (a*4.5)-4);//back
                 toAngle(0);
                 //arm down
                 controlArmServo(1);//down
