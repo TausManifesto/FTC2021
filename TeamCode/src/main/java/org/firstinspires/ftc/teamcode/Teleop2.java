@@ -3,15 +3,19 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 
 @TeleOp(name = "Tele-Op2", group = "Taus")
-
+@Config
 public class Teleop2 extends LinearOpMode {
 
     public AutonomousMethods method = new AutonomousMethods();
@@ -25,20 +29,18 @@ public class Teleop2 extends LinearOpMode {
     boolean dpadPressed = false;
     boolean leftStick = false;
 
-    double shooterRpm = 2750;
-    double powerShotRpm = 2500;
-    double shooterPower = (shooterRpm*28)/60.0;
-    double powerShotPower = (powerShotRpm*28)/60.0;
+
     double rpm;
     double oldRotations = 0;
     double multiplier = 1;
     double previousY = 0;
     double previousX = 0;
 
-    double p = 5;
-    double i = 0;
-    double d = 0;
-    double f = 0;
+
+    public static double p = 100;//500, 100
+    public static double i = 0;//0, .1
+    public static double d = 0;//0, 0
+    public static double f = 14.3;//15, 15
 
     //PIDFCoefficients pid = method.robot.shooter.getPIDFCoefficients(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
@@ -48,12 +50,20 @@ public class Teleop2 extends LinearOpMode {
         method.robot.initializeHardware(hardwareMap);
         telemetry.addLine(method.magic8());
         telemetry.update();
-        method.robot.shooter.setVelocityPIDFCoefficients(p, i, d, f);
         waitForStart();
+        method.robot.shooter.setVelocityPIDFCoefficients(p, i, d, f);
         method.controlLaunchServo(1);
-        method.robot.shooter.setVelocity(shooterPower);
+        method.robot.shooter.setVelocity(method.shooterPower);
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        Telemetry dashboardTelemetry = dashboard.getTelemetry();
+
+        dashboardTelemetry.addLine("starting");
+        dashboardTelemetry.update();
+
 
         while (opModeIsActive()) {
+            method.robot.shooter.setVelocityPIDFCoefficients(p, i, d, f);
+            method.robot.shooter.setVelocity(method.shooterPower);
             drive();
 
             shooter();
@@ -69,9 +79,15 @@ public class Teleop2 extends LinearOpMode {
             resetAngle();
 
             telemetry.addData("angle", (int)method.getHeading());
-            telemetry.addData("target", (int)shooterRpm);
-            telemetry.addData("current", (int)rpm);
-            telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
+            telemetry.addData("target", (int)method.shooterRpm);
+            telemetry.addData("current", (int)(method.robot.shooter.getVelocity()/28.0)*60);
+           // telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
+
+            dashboardTelemetry.addData("current", (int)(method.robot.shooter.getVelocity()/28.0)*60);
+            dashboardTelemetry.addData("target", (int)method.shooterRpm);
+            dashboardTelemetry.addData("0", 0);
+            dashboardTelemetry.update();
+
             telemetry.update();
             telemetry.clear();
         }
@@ -94,9 +110,18 @@ public class Teleop2 extends LinearOpMode {
             leftStick = false;
         }
         double scaleFactor = 1;
-        double rotationValue = gamepad1.right_stick_x;
-        double stickX = gamepad1.left_stick_x;
-        double stickY = -gamepad1.left_stick_y;
+        double rotationValue = 0;
+        double stickX = 0;
+        double stickY = 0;
+        if(Math.abs(gamepad1.right_stick_x)>.05) {
+            rotationValue = gamepad1.right_stick_x;
+        }
+        if(Math.abs(gamepad1.left_stick_x)>.05) {
+            stickX = gamepad1.left_stick_x;
+        }
+        if(Math.abs(gamepad1.left_stick_y)>.05) {
+            stickY = -gamepad1.left_stick_y;
+        }
         double gyroAngle = method.getHeading() * Math.PI / 180; //Converts gyroAngle into radians
 
         //Robot Centric
@@ -129,7 +154,7 @@ public class Teleop2 extends LinearOpMode {
 
     public void shooter(){
         //method.robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        if(method.runtime2.seconds()>5){
+        if(method.runtime2.seconds()>.1){
             double newRotations = method.robot.shooter.getCurrentPosition()/28.0;
             double rotations = newRotations - oldRotations;
             double min = method.runtime2.seconds()/60;
@@ -141,7 +166,7 @@ public class Teleop2 extends LinearOpMode {
         if(gamepad1.x && !isXPressed){
             isXPressed = true;
             if (!shooterOn) {
-              method.setShooterPower(shooterPower);
+              method.setShooterPower(method.shooterPower);
               shooterOn = true;
             }
             else{
@@ -150,21 +175,21 @@ public class Teleop2 extends LinearOpMode {
             }
         }
         if(gamepad1.dpad_up && !dpadPressed){
-            shooterPower +=(50*28)/60.0;
-            shooterRpm +=50;
-            method.robot.shooter.setVelocity(shooterPower);
+            method.shooterPower +=(50*28)/60.0;
+            method.shooterRpm +=50;
+            method.robot.shooter.setVelocity(method.shooterPower);
             dpadPressed=true;
         }
         else if(gamepad1.dpad_down && !dpadPressed){
-            shooterPower -=(50*28)/60.0;
-            shooterRpm-=50;
-            method.robot.shooter.setVelocity(shooterPower);
+            method.shooterPower -=(50*28)/60.0;
+            method.shooterRpm-=50;
+            method.robot.shooter.setVelocity(method.shooterPower);
             dpadPressed=true;
         }
         else if(gamepad1.dpad_right && !dpadPressed){
-            shooterPower = (2750*28)/60.0;
-            shooterRpm=2750;
-            method.robot.shooter.setVelocity(shooterPower);
+            method.shooterPower = (2750*28)/60.0;
+            method.shooterRpm=2750;
+            method.robot.shooter.setVelocity(method.shooterPower);
             dpadPressed=true;
         }
 
@@ -179,15 +204,14 @@ public class Teleop2 extends LinearOpMode {
         if(gamepad1.right_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.shoot(32.5, shooterPower);
+            method.shoot(30, method.shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad1.left_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            sleep(3000);
-            method.powerShot(0, -5, -10, powerShotPower, shooterPower);
+            method.powerShot(0, 6, 12, method.powerShotPower, method.shooterPower);
         }
     }
 

@@ -11,13 +11,15 @@ public class RedLeft extends AutonomousMethods {
     @Override
     public void runOpMode() throws InterruptedException {
 
-        int numberOfRings = 0;
-        double a = 24;//inches/square
+        double p = 100;
+        double i = 0;
+        double d = 0;
+        double f = 14.3;
 
         //initializing robot
         initializeRobot();
         //detect number of rings
-        numberOfRings = findNumRings(bmp);
+        int numberOfRings = findNumRings(bmp);
         telemetry.addData("rings", numberOfRings);
         telemetry.update();
         bmp.recycle();
@@ -32,47 +34,37 @@ public class RedLeft extends AutonomousMethods {
         controlArmServo(.35);//up
 
         //shoot
-        setIntakePower(1);
-        setShooterPower(.545);
-        forward(1, a*(2.5)+3);
+        setIntakePower(.5);
+        robot.shooter.setVelocityPIDFCoefficients(p,i,d,f);
+        robot.shooter.setVelocity(shooterPower);
+        forward(.5, 2.5, startOffset);
         setIntakePower(0);
-        shoot(32.5, .545);
+        shoot(23, shooterPower);
         setShooterPower(0);
-        toAngle(0);
+        toAngle(0, .3);
 
         switch (numberOfRings){
             case 0:
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(1,  (a*.5)-8);//forward
+                forward(.5,  0, 4);//forward
                 strafeRight(.5, 18);//right
                 //drop wobble goal
-                controlArmServo(1);//down
-                sleep(500);
-                controlClawServo(.7);//open
-                controlArmServo(0);//up
+                dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
                 strafeLeft(.5, 12);//left
-                backward(1, (a*2.5)-4);//back
+                backward(.5, 2,8);//back
                 //arm down
-                controlArmServo(1);//down
-                sleep(500);
-                strafeRight(.5, 6);
-                controlClawServo(.25);//close
-                sleep(500);
-                controlArmServo(0);//up
+                pickUpWobbleGoal(6);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(1, (a*2.5)+4);//forward
+                forward(.5, 2,16);//forward
                 strafeRight(.5, 6);//right
                 //drop wobble goal
-                controlArmServo(1);//down
-                sleep(500);
-                controlClawServo(.7);//open
-                controlArmServo(0);//up
+                dropWobbleGoal();
 
                 //park
                 sleep(1000);
@@ -80,77 +72,53 @@ public class RedLeft extends AutonomousMethods {
             case 1:
                 //Dropping 1st Wobble Goal
                 //move to square
-                forward(1, (a*1.5)-8);
+                forward(.5, 1,4);
                 //drop wobble goal
-                controlArmServo(1);//move down
-                sleep(500);
-                controlClawServo(.7);//open
-                controlArmServo(0);//move up
+                dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
-                backward(1, (a*3.5)-4);
+                backward(.5, 3,8);
                 //arm down
-                controlArmServo(1);//move down
-                strafeRight(.5, .5*a);
-                controlClawServo(.25);//close
-                sleep(500);
-                controlArmServo(0);//move up
+                pickUpWobbleGoal(12);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                strafeLeft(.5, .75*a);
-                forward(1, (a*3.5)+4);
+                strafeLeft(.5, 18);
+                forward(.5, 3,16);
                 //drop wobble goal
-                controlArmServo(1);//move down
-                sleep(1000);
-                controlClawServo(.7);//open
-                controlArmServo(0);//move up
-                sleep(500);
+                dropWobbleGoal();
 
                 //park
-                backward(1,a*1);
+                backward(1,1, 0);
                 break;
             case 4:
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(1,  (a*2.5)-8);//forward
+                forward(.75,  2,4);//forward
                 strafeRight(.5, 18);//right
                 //drop wobble goal
-                controlArmServo(1);//down
-                sleep(500);
-                controlClawServo(.7);//open
-                controlArmServo(0);//up
+                dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
                 strafeLeft(.5, 18);//left
-                toAngle(0);
-                backward(1, (a*4.5)-4);//back
-                toAngle(0);
-                //arm down
-                controlArmServo(1);//down
-                sleep(500);
-                strafeRight(.5, 12);
-                controlClawServo(.25);//close
-                sleep(500);
-                controlArmServo(0);//up
+                toAngle(0, .3);
+                backward(.75, 4,8);//back
+                toAngle(0, .3);
+                pickUpWobbleGoal(12);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                toAngle(0);
                 strafeLeft(1, 12);
-                forward(1, (a*4.5)+4);//forward
+                toAngle(0, .3);
+                forward(.75, 4,16);//forward
                 strafeRight(.5, 18);//right
                 //drop wobble goal
-                controlArmServo(1);//down
-                sleep(1000);
-                controlClawServo(.7);//open
-                controlArmServo(0);//up
-                sleep(500);
+                dropWobbleGoal();
 
                 //park
-                backward(1,a*2);//back
+                backward(1,2,0);//back
                 break;
         }
 

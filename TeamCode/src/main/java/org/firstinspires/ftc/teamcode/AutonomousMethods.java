@@ -80,13 +80,21 @@ public class AutonomousMethods extends LinearOpMode {
     public final double wheelCircumference = wheelDiameter*Math.PI;
     public final double encoderCounts = 383.6; //counts per one rotation of output shaft
     double countsPerRotation = encoderCounts*gearRatio;
-    public double currentXPosition = 0;
-    public double currentYPosition = 0;
-    double max;
+    double distPerSquare = 24;//inches/square
+    double robotLength = 18;
+    double startOffset = (distPerSquare-robotLength)/2;
+
+    double shooterRpm = 2450;
+    double powerShotRpm = 2100;
+    double shooterPower = (shooterRpm*28)/60.0;
+    double powerShotPower = (powerShotRpm*28)/60.0;
 
     public double resetAngle = 0;
     public ElapsedTime runtime = new ElapsedTime();
     public ElapsedTime runtime2 = new ElapsedTime();
+    public double currentXPosition = 0;
+    public double currentYPosition = 0;
+    double max;
 
     public void initializeRobot() {
         robot.initializeHardware(hardwareMap);
@@ -112,15 +120,22 @@ public class AutonomousMethods extends LinearOpMode {
 
             startCamera();
             if (cameraCaptureSession == null) return;
+            telemetry.addLine("start");
+            telemetry.update();
+            waitForStart();
             bmp = frameQueue.poll();
+
 
         }
         finally {
             closeCamera();
         }
     }
+
+    //Basic
     //moving forward distance (inch) with power [0, 1]
-    public void forward(double power, double distance) {
+    public void forward(double power, double squares, double inches) {
+        double distance = squares*distPerSquare+inches;
         max = power* 48;
         runWithEncoders();
         int counts = (int) ((distance / (wheelCircumference)) * (countsPerRotation));
@@ -128,13 +143,17 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(errorToPower((distance-distanceGone-6), max, power, .3));
+            setAllMotorsTo(errorToPower((distance-distanceGone), max, power, .1));
+            if (distance-distanceGone<=.25){
+                break;
+            }
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
     }
     //moving backward distance (inch) with power [0, 1]
-    public void backward(double power, double distance) {
+    public void backward(double power, double squares, double inches) {
+        double distance = squares*distPerSquare+inches;
         max = power* 48;
         runWithEncoders();
         int counts = (int) -((distance / (wheelCircumference)) * (countsPerRotation));
@@ -142,7 +161,10 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (-robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(-errorToPower((distance-distanceGone-6), max, power, .3));
+            setAllMotorsTo(-errorToPower((distance-distanceGone), max, power, .1));
+            if (distance-distanceGone<=.25){
+                break;
+            }
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
@@ -157,6 +179,9 @@ public class AutonomousMethods extends LinearOpMode {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
             double power2 = errorToPower((distance-distanceGone), 24, power, .3);
             setPowerOfMotorsTo(power2, -power2 , -power2 , power2 );
+            if (distance-distanceGone<=.25){
+                break;
+            }
         }
         stopAndResetEncoders();
     }
@@ -171,31 +196,36 @@ public class AutonomousMethods extends LinearOpMode {
             double distanceGone = (wheelCircumference) * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
             double power2 = errorToPower((distance-distanceGone), 24, power, .3);
             setPowerOfMotorsTo(-power2, power2 , power2 , -power2 );
+            if (distance-distanceGone<=.25){
+                break;
+            }
         }
         stopAndResetEncoders();
     }
     //going to any angle
-    public void toAngle(double angle){
+    public void toAngle(double angle, double speed){
         runWithEncoders();
         double calcAngle = getHeading()-angle;
         boolean right = calcAngle<0;
         double power;
         if (right){
             while (calcAngle<0){
-                power = errorToPower(angle-getHeading(), 90, 1, .05);
+                power = errorToPower(-calcAngle, 90, speed, .05);
                 setPowerOfMotorsTo(power, power , -power , -power );
                 calcAngle = adjust(getHeading()-angle);
             }
         }
         else {
             while (calcAngle>0){
-                power = errorToPower(Math.abs(angle-getHeading()), 90, 1, .1);
+                power = errorToPower(Math.abs(calcAngle), 120, speed, .1);
                 setPowerOfMotorsTo(-power, -power , power , power );
                 calcAngle = adjust(getHeading()-angle);
             }
         }
         setAllMotorsTo(0);
     }
+
+    //Tools
     //sets the power of motors to inputted powers
     public void setPowerOfMotorsTo(double bl, double fl, double br, double fr) {
         //set diagonal wheels to prevent jerking
@@ -310,7 +340,7 @@ public class AutonomousMethods extends LinearOpMode {
         }
         //setting all motor powers to 0 (stopping)
         setAllMotorsTo(0);
-        toAngle(angle);
+        toAngle(angle, 1);
         currentYPosition=y;
         currentXPosition=x;
     }
@@ -348,35 +378,45 @@ public class AutonomousMethods extends LinearOpMode {
     }
     //shoots all three rings at the same angle
     public void shoot(double a, double power){
-        toAngle(a);
+        robot.shooter.setVelocity(power);
+        toAngle(a, .5);
         controlLaunchServo(0);
-        setIntakePower(.75);
-        sleep(1000);
+        setIntakePower(1);
+        sleep(3000);
         controlLaunchServo(1);
         setIntakePower(0);
+    }
+    public void shoot2(double a, double power){
+        robot.shooter.setVelocity(power);
+        toAngle(a, .5);
+        controlLaunchServo(0);
+        //setIntakePower(1);
+        //sleep(3000);
+        //controlLaunchServo(1);
+        //setIntakePower(0);
     }
     //shoots all three rings at 3 different angles
     public void powerShot(double a1, double a2, double a3, double power, double powerE){
         robot.shooter.setVelocity(power);
-        toAngle(a1);
+        toAngle(a1,.3);
         setIntakePower(0);
         controlLaunchServo(0);
         setIntakePower(.15);
+        sleep(500);
         controlLaunchServo(1);
         sleep(500);
         setIntakePower(1);
-        setShooterPower(.52);
 
-        toAngle(a2);
+        toAngle(a2, .3);
         setIntakePower(0);
         controlLaunchServo(0);
         setIntakePower(.15);
+        sleep(500);
         controlLaunchServo(1);
         sleep(500);
         setIntakePower(1);
-        setShooterPower(.51);
 
-        toAngle(a3);
+        toAngle(a3, .3);
         setIntakePower(0);
         controlLaunchServo(0);
         setIntakePower(.15);
@@ -384,6 +424,23 @@ public class AutonomousMethods extends LinearOpMode {
         robot.shooter.setVelocity(powerE);
         controlLaunchServo(1);
         setIntakePower(0);
+    }
+    //dropping wobble goal
+    public void dropWobbleGoal(){
+        controlArmServo(1);//down
+        sleep(1000);
+        controlClawServo(.7);//open
+        controlArmServo(0);//up
+        sleep(500);
+    }
+    //picking up wobble goal
+    public void pickUpWobbleGoal(double distanceRight){
+        controlArmServo(1);//down
+        sleep(1000);
+        strafeRight(.5, distanceRight);
+        controlClawServo(.25);//close
+        sleep(500);
+        controlArmServo(0);//up
     }
     //magic stuff
     public String magic8() {
@@ -559,12 +616,12 @@ public class AutonomousMethods extends LinearOpMode {
         int rings = 0;
         int h = input.height();
         int w = input.width();
-        Imgproc.rectangle(input, new Point(0,0), new Point(640,350), new Scalar(255,0,0), -1);
+        Imgproc.rectangle(input, new Point(0,0), new Point(640,375), new Scalar(255,0,0), -1);
         Imgproc.cvtColor(input,input,Imgproc.COLOR_BGR2HSV);
-        Core.inRange(input, new Scalar(0, 100, 0),new Scalar(35, 360, 360),input);
+        Core.inRange(input, new Scalar(5, 100, 0),new Scalar(35, 360, 360),input);//new Scalar(0, 100, 0),new Scalar(35, 360, 360),input)
 
         int pixels = Core.countNonZero(input);
-        //telemetry.addData("pixels", pixels);
+        telemetry.addData("pixels", pixels);
         //telemetry.addData("width=",w);
         //telemetry.addData("height=",h);
         if(pixels > 4000){

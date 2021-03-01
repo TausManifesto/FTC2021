@@ -3,12 +3,15 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 
 @TeleOp(name = "Tele-Op", group = "Taus")
@@ -26,20 +29,17 @@ public class Teleop extends LinearOpMode {
     boolean dpadPressed = false;
     boolean leftStick = false;
 
-    double shooterRpm = 2750;
-    double powerShotRpm = 2500;
-    double shooterPower = (shooterRpm*28)/60.0;
-    double powerShotPower = (powerShotRpm*28)/60.0;    double rpm = 0;
+    double rpm;
     double oldRotations = 0;
     double multiplier = 1;
     double previousY = 0;
     double previousX = 0;
+    double powershot = 0;
 
-
-    double p = 5;
-    double i = 0;
-    double d = 0;
-    double f = 0;
+    public static double p = 100;
+    public static double i = 0;
+    public static double d = 0;
+    public static double f = 14.3;
 
     //PIDFCoefficients pid = method.robot.shooter.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -51,7 +51,12 @@ public class Teleop extends LinearOpMode {
         method.robot.shooter.setVelocityPIDFCoefficients(p,i,d,f);
         waitForStart();
         method.controlLaunchServo(1);
-        method.setShooterPower(shooterPower);
+        method.robot.shooter.setVelocity(method.shooterPower);
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        Telemetry dashboardTelemetry = dashboard.getTelemetry();
+
+        dashboardTelemetry.addLine("starting");
+        dashboardTelemetry.update();
 
         while (opModeIsActive()) {
             drive();
@@ -69,11 +74,17 @@ public class Teleop extends LinearOpMode {
             resetAngle();
 
             telemetry.addData("angle", (int)method.getHeading());
-            telemetry.addData("shooter", (int)shooterPower);
-            telemetry.addData("rpm", (int)rpm);
-            telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
+            telemetry.addData("target", (int)method.shooterRpm);
+            telemetry.addData("rpm", (int)(method.robot.shooter.getVelocity()/28.0)*60);
+            //telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
             telemetry.update();
             telemetry.clear();
+
+            dashboardTelemetry.addData("current", (int)(method.robot.shooter.getVelocity()/28.0)*60);
+            dashboardTelemetry.addData("target", (int)method.shooterRpm);
+            dashboardTelemetry.addData("0", 0);
+            dashboardTelemetry.update();
+
         }
 
         method.setAllMotorsTo(0);
@@ -94,9 +105,27 @@ public class Teleop extends LinearOpMode {
             leftStick = false;
         }
         double scaleFactor = 1;
-        double rotationValue = gamepad1.right_stick_x;
-        double stickX = gamepad1.left_stick_x;
-        double stickY = -gamepad1.left_stick_y;
+        double rotationValue = 0;
+        double stickX = 0;
+        double stickY = 0;
+        if(Math.abs(gamepad1.right_stick_x)>.1) {
+            rotationValue = gamepad1.right_stick_x;
+        }
+        else{
+            rotationValue=0;
+        }
+        if(Math.abs(gamepad1.left_stick_x)>.1) {
+            stickX = gamepad1.left_stick_x;
+        }
+        else {
+            stickX=0;
+        }
+        if(Math.abs(gamepad1.left_stick_y)>.1) {
+            stickY = -gamepad1.left_stick_y;
+        }
+        else {
+            stickY=0;
+        }
         double gyroAngle = method.getHeading() * Math.PI / 180; //Converts gyroAngle into radians
 
         //Robot Centric
@@ -129,7 +158,7 @@ public class Teleop extends LinearOpMode {
 
     public void shooter(){
         //method.robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        if(method.runtime2.seconds()>5){
+        if(method.runtime2.seconds()>.1){
             double newRotations = method.robot.shooter.getCurrentPosition()/28.0;
             double rotations = newRotations - oldRotations;
             double min = method.runtime2.seconds()/60;
@@ -138,10 +167,10 @@ public class Teleop extends LinearOpMode {
             oldRotations = newRotations;
         }
 
-        if(gamepad1.x && !isXPressed){
+        if(gamepad2.x && !isXPressed){
             isXPressed = true;
             if (!shooterOn) {
-                method.setShooterPower(shooterPower);
+                method.setShooterPower(method.shooterPower);
                 shooterOn = true;
             }
             else{
@@ -149,29 +178,29 @@ public class Teleop extends LinearOpMode {
                 shooterOn = false;
             }
         }
-        if(gamepad1.dpad_up && !dpadPressed){
-            shooterPower +=(50*28)/60.0;
-            shooterRpm +=50;
-            method.robot.shooter.setVelocity(shooterPower);
+        if(gamepad2.dpad_up && !dpadPressed){
+            method.shooterPower +=(50*28)/60.0;
+            method.shooterRpm +=50;
+            method.robot.shooter.setVelocity(method.shooterPower);
             dpadPressed=true;
         }
-        else if(gamepad1.dpad_down && !dpadPressed){
-            shooterPower -=(50*28)/60.0;
-            shooterRpm-=50;
-            method.robot.shooter.setVelocity(shooterPower);
+        else if(gamepad2.dpad_down && !dpadPressed){
+            method.shooterPower -=(50*28)/60.0;
+            method.shooterRpm-=50;
+            method.robot.shooter.setVelocity(method.shooterPower);
             dpadPressed=true;
         }
-        else if(gamepad1.dpad_right && !dpadPressed){
-            shooterPower = (2750*28)/60.0;
-            shooterRpm=2750;
-            method.robot.shooter.setVelocity(shooterPower);
+        else if(gamepad2.dpad_right && !dpadPressed){
+            method.shooterPower = (2750*28)/60.0;
+            method.shooterRpm=2750;
+            method.robot.shooter.setVelocity(method.shooterPower);
             dpadPressed=true;
         }
 
-        if(!gamepad1.x){
+        if(!gamepad2.x){
             isXPressed = false;
         }
-        if(!gamepad1.dpad_up && !gamepad2.dpad_down && !gamepad2.dpad_right){
+        if(!gamepad2.dpad_up && !gamepad2.dpad_down && !gamepad2.dpad_right){
             dpadPressed = false;
         }
     }
@@ -179,14 +208,31 @@ public class Teleop extends LinearOpMode {
         if(gamepad2.right_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.shoot(32.5, shooterPower);
+            method.shoot2(23, method.shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad2.left_trigger>.1) {
-            telemetry.addLine(method.magic8());
-            telemetry.update();
-            method.powerShot(0, -5, -10, powerShotPower, shooterPower);
+            method.robot.shooter.setVelocity(method.powerShotPower);
+            if (powershot==0){
+                method.toAngle(0, .3);
+                method.controlLaunchServo(0);
+            }
+            if (powershot==1){
+                method.toAngle(6, .3);
+                method.controlLaunchServo(0);
+            }
+            if (powershot==2){
+                method.toAngle(12, .3);
+                method.controlLaunchServo(0);
+            }
+            powershot++;
+            if(powershot==3){
+                powershot = 0;
+            }
+        //    telemetry.addLine(method.magic8());
+        //    telemetry.update();
+        //    method.powerShot(0, 6, 12, method.powerShotPower, method.shooterPower);
         }
     }
 
@@ -208,7 +254,12 @@ public class Teleop extends LinearOpMode {
     }
     public void intake(){
         method.robot.intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        method.setIntakePower(-gamepad2.right_stick_y);
+        if (Math.abs(gamepad2.left_stick_y)>.05) {
+            method.setIntakePower(-gamepad2.left_stick_y);
+        }
+        else{
+            method.setIntakePower(0);
+        }
     }
     public void claw(){
         if((gamepad2.b && !isBPressed)){

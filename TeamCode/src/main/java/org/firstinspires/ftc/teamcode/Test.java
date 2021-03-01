@@ -19,6 +19,7 @@ public class Test extends AutonomousMethods {
         telemetry.addData("rings", numRings);
         telemetry.update();
         runWithEncoders();
+        sleep(10000);
 
 
 
