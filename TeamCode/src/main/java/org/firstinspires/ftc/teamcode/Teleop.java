@@ -25,33 +25,21 @@ public class Teleop extends LinearOpMode {
     boolean clawClosed = false;
     boolean isRunning = false;
     boolean isXPressed = false;
-    boolean stopperDown = true;
     boolean dpadPressed = false;
     boolean leftStick = false;
 
-    double rpm;
-    double oldRotations = 0;
     double multiplier = 1;
     double previousY = 0;
     double previousX = 0;
-    double powershot = 0;
-
-    public static double p = 100;
-    public static double i = 0;
-    public static double d = 0;
-    public static double f = 14.3;
-
-    //PIDFCoefficients pid = method.robot.shooter.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
 
     @Override
     public void runOpMode() {
         method.robot.initializeHardware(hardwareMap);
         telemetry.addLine(method.magic8());
         telemetry.update();
-        method.robot.shooter.setVelocityPIDFCoefficients(p,i,d,f);
+        method.robot.shooter.setVelocityPIDFCoefficients(method.p,method.i,method.d,method.f);
         waitForStart();
-        method.controlLaunchServo(1);
-        method.robot.shooter.setVelocity(method.shooterPower);
+        method.setShooterPower(method.shooterPower);
         FtcDashboard dashboard = FtcDashboard.getInstance();
         Telemetry dashboardTelemetry = dashboard.getTelemetry();
 
@@ -158,14 +146,6 @@ public class Teleop extends LinearOpMode {
 
     public void shooter(){
         //method.robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        if(method.runtime2.seconds()>.1){
-            double newRotations = method.robot.shooter.getCurrentPosition()/28.0;
-            double rotations = newRotations - oldRotations;
-            double min = method.runtime2.seconds()/60;
-            rpm = rotations/min;
-            method.runtime2.reset();
-            oldRotations = newRotations;
-        }
 
         if(gamepad2.x && !isXPressed){
             isXPressed = true;
@@ -179,21 +159,21 @@ public class Teleop extends LinearOpMode {
             }
         }
         if(gamepad2.dpad_up && !dpadPressed){
-            method.shooterPower +=(50*28)/60.0;
             method.shooterRpm +=50;
-            method.robot.shooter.setVelocity(method.shooterPower);
+            method.shooterPower = (method.shooterRpm*28)/60.0;
+            method.setShooterPower(method.shooterPower);
             dpadPressed=true;
         }
         else if(gamepad2.dpad_down && !dpadPressed){
-            method.shooterPower -=(50*28)/60.0;
             method.shooterRpm-=50;
-            method.robot.shooter.setVelocity(method.shooterPower);
+            method.shooterPower = (method.shooterRpm*28)/60.0;
+            method.setShooterPower(method.shooterPower);
             dpadPressed=true;
         }
         else if(gamepad2.dpad_right && !dpadPressed){
-            method.shooterPower = (2750*28)/60.0;
-            method.shooterRpm=2750;
-            method.robot.shooter.setVelocity(method.shooterPower);
+            method.shooterRpm=method.staticShooterRpm;
+            method.shooterPower = (method.shooterRpm*28)/60.0;
+            method.setShooterPower(method.shooterPower);
             dpadPressed=true;
         }
 
@@ -208,45 +188,21 @@ public class Teleop extends LinearOpMode {
         if(gamepad2.right_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.shoot2(23, method.shooterPower);
+            method.shoot(-18, method.shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad2.left_trigger>.1) {
-            method.robot.shooter.setVelocity(method.powerShotPower);
-            if (powershot==0){
-                method.toAngle(0, .3);
-                method.controlLaunchServo(0);
-            }
-            if (powershot==1){
-                method.toAngle(6, .3);
-                method.controlLaunchServo(0);
-            }
-            if (powershot==2){
-                method.toAngle(12, .3);
-                method.controlLaunchServo(0);
-            }
-            powershot++;
-            if(powershot==3){
-                powershot = 0;
-            }
-        //    telemetry.addLine(method.magic8());
-        //    telemetry.update();
-        //    method.powerShot(0, 6, 12, method.powerShotPower, method.shooterPower);
+            telemetry.addLine(method.magic8());
+            telemetry.update();
+            method.powerShot(10, 16, 20, method.powerShotPower, method.shooterPower);
         }
     }
 
     public void stopper(){
         if(gamepad2.a && !isAPressed){
             isAPressed = true;
-            if (!stopperDown) {
-                method.controlLaunchServo(1);
-                stopperDown = true;
-            }
-            else{
-                method.controlLaunchServo(0);
-                stopperDown = false;
-            }
+            method.shootRings(1);
         }
         if(!gamepad2.a){
             isAPressed = false;
@@ -255,7 +211,7 @@ public class Teleop extends LinearOpMode {
     public void intake(){
         method.robot.intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         if (Math.abs(gamepad2.left_stick_y)>.05) {
-            method.setIntakePower(-gamepad2.left_stick_y);
+            method.setIntakePower(-gamepad2.left_stick_y*.5);
         }
         else{
             method.setIntakePower(0);
@@ -305,21 +261,23 @@ public class Teleop extends LinearOpMode {
     }
     public void goToPosition(){
         if(gamepad1.left_trigger>.1){
-            method.goToPosition(32.5, method.currentXPosition, method.currentYPosition, 100, 100);
+            method.goToPosition(0, method.currentXPosition, method.currentYPosition, 100, 100);
         }
     }
     public void updatePosition(){
-        if (gamepad1.left_trigger>.1){
+        if (gamepad1.dpad_left){
             method.stopAndResetEncoders();
         }
 
         double rotation = (method.robot.backLeftMotor.getCurrentPosition() - method.robot.frontRightMotor.getCurrentPosition()) / 2.0;
 
         double currentY = method.robot.backLeftMotor.getCurrentPosition()-rotation;
-        double deltaY1 = previousY-currentY;
+        double deltaY1 = currentY-previousY;
+        //telemetry.addData("Delta y1", deltaY1);
 
         double currentX = method.robot.backRightMotor.getCurrentPosition()+rotation;
-        double deltaX1 = previousX-currentX;
+        double deltaX1 = currentX-previousX;
+        //telemetry.addData("Delta x1", deltaX1);
 
         double theta = Math.atan2(deltaY1,deltaX1);
         //changing from a [+] with | being y and -- being x to an [X] with \ being y and / being x (forward is forward)
@@ -328,22 +286,45 @@ public class Teleop extends LinearOpMode {
 
         double calculationAngle =  rotatedTheta+gyroAngle;
 
-        double deltaY2 = Math.sin(calculationAngle) * deltaY1 + Math.sin(calculationAngle) * deltaX1;
-        double deltaX2 = Math.cos(calculationAngle) * deltaY1;
-        if((Math.cos(calculationAngle) * deltaY1>0&&Math.cos(calculationAngle) * deltaX1<0)||(Math.cos(calculationAngle) * deltaY1<0&&Math.cos(calculationAngle) * deltaX1>0)) {
-            deltaY2 = Math.sin(calculationAngle) * deltaY1;
-            deltaX2 = Math.cos(calculationAngle) * deltaY1 + Math.cos(calculationAngle) * deltaX1;
+        double deltaY2 = Math.sin(calculationAngle) * Math.abs(deltaY1);// + Math.sin(calculationAngle) * Math.abs(deltaX1);
+        double deltaX2 = Math.cos(calculationAngle) * Math.abs(deltaY1);
+
+        if((Math.cos(calculationAngle) * Math.abs(deltaY1)>0&&Math.cos(calculationAngle) * Math.abs(deltaX1)<0)||(Math.cos(calculationAngle) * Math.abs(deltaY1)<0&&Math.cos(calculationAngle) * Math.abs(deltaX1)>0)) {
+            //deltaY2 = Math.sin(calculationAngle) * Math.abs(deltaY1);
+            deltaX2 = Math.cos(calculationAngle) * Math.abs(deltaY1) + Math.cos(calculationAngle) * Math.abs(deltaX1);
         }
+        //telemetry.addData("Delta y2", deltaY2);
+
+        //telemetry.addData("Delta y2", deltaY2);
 
         double DistY = (method.wheelCircumference) * ((deltaY2) / method.countsPerRotation);
+        //telemetry.addData("Delta y", DistY);
+
         double DistX = (method.wheelCircumference) * ((deltaX2) / method.countsPerRotation);
-        if(Math.abs(deltaY2)>30) {
-            method.currentXPosition = DistX;
-            previousY = deltaY1;
-        }
-        if(Math.abs(deltaX2)>30) {
-            method.currentYPosition = DistY;
-            previousX = deltaX1;
+        //telemetry.addData("Delta x", DistX);
+
+        if(Math.abs(deltaY2)>30 || Math.abs(deltaX2)>30) {
+            method.currentYPosition += DistY;
+            previousY = currentY;
+
+            if(method.currentYPosition<0){
+                method.currentYPosition = 0;
+            }
+
+            else if (method.currentYPosition>135){
+                method.currentYPosition = 135;
+            }
+
+            method.currentXPosition += DistX;
+            previousX = currentX;
+
+            if(method.currentXPosition<0){
+                method.currentXPosition = 0;
+            }
+
+            else if (method.currentXPosition>88){
+                method.currentXPosition = 88;
+            }
         }
     }
 

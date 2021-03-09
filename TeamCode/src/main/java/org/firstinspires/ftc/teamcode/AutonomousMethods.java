@@ -84,16 +84,22 @@ public class AutonomousMethods extends LinearOpMode {
     double robotLength = 18;
     double startOffset = (distPerSquare-robotLength)/2;
 
-    double shooterRpm = 2450;
-    double powerShotRpm = 2100;
-    double shooterPower = (shooterRpm*28)/60.0;
-    double powerShotPower = (powerShotRpm*28)/60.0;
+    public double staticShooterRpm = 2100;
+    public double shooterRpm = 2100;
+    public double powerShotRpm = 1950;
+    public double powerShotRpm2 = 1900;
+    public double shooterPower = (shooterRpm*28)/60.0;
+    public double powerShotPower = (powerShotRpm*28)/60.0;
+    public double powerShotPower2 = (powerShotRpm2*28)/60.0;
+    public static double p = 100;//500, 100
+    public static double i = 0;//0, .1
+    public static double d = 0;//0, 0
+    public static double f = 14.3;//15, 15
 
     public double resetAngle = 0;
     public ElapsedTime runtime = new ElapsedTime();
-    public ElapsedTime runtime2 = new ElapsedTime();
-    public double currentXPosition = 0;
-    public double currentYPosition = 0;
+    public double currentXPosition = robotLength/2;
+    public double currentYPosition = robotLength/2;
     double max;
 
     public void initializeRobot() {
@@ -110,7 +116,7 @@ public class AutonomousMethods extends LinearOpMode {
         if (!OpenCVLoader.initDebug()) {
             error("Error: Cannot load OpenCV Library");
         } else {
-            telemetry.addData(">", "Loaded OpenCV");
+            telemetry.addLine("Loaded OpenCV");
             telemetry.update();
         }
 
@@ -120,7 +126,7 @@ public class AutonomousMethods extends LinearOpMode {
 
             startCamera();
             if (cameraCaptureSession == null) return;
-            telemetry.addLine("start");
+            telemetry.addLine(magic8());
             telemetry.update();
             waitForStart();
             bmp = frameQueue.poll();
@@ -143,7 +149,7 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(errorToPower((distance-distanceGone), max, power, .1));
+            setAllMotorsTo(errorToPower((distance-distanceGone), max, power, .05));
             if (distance-distanceGone<=.25){
                 break;
             }
@@ -161,7 +167,7 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (-robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            setAllMotorsTo(-errorToPower((distance-distanceGone), max, power, .1));
+            setAllMotorsTo(-errorToPower((distance-distanceGone), max, power, .05));
             if (distance-distanceGone<=.25){
                 break;
             }
@@ -177,7 +183,7 @@ public class AutonomousMethods extends LinearOpMode {
         runToPosition();
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
-            double power2 = errorToPower((distance-distanceGone), 24, power, .3);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .05);
             setPowerOfMotorsTo(power2, -power2 , -power2 , power2 );
             if (distance-distanceGone<=.25){
                 break;
@@ -194,7 +200,7 @@ public class AutonomousMethods extends LinearOpMode {
 
         while (robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()) {
             double distanceGone = (wheelCircumference) * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
-            double power2 = errorToPower((distance-distanceGone), 24, power, .3);
+            double power2 = errorToPower((distance-distanceGone), 24, power, .05);
             setPowerOfMotorsTo(-power2, power2 , power2 , -power2 );
             if (distance-distanceGone<=.25){
                 break;
@@ -291,16 +297,6 @@ public class AutonomousMethods extends LinearOpMode {
         }
         return angle;
     }
-    //adjusting heading on a scale of [0, 2pi]
-    public double adjust2(double angle) {
-        if (angle < Math.PI/2) {
-            angle = -angle + (Math.PI / 2);
-        }
-        else{
-            angle = -angle+(5*Math.PI)/2;
-        }
-        return angle;
-    }
     //goes to a position and angle on the field
     public void goToPosition(double angle, double currentX, double currentY, double x, double y) {
         runWithEncoders();
@@ -358,11 +354,21 @@ public class AutonomousMethods extends LinearOpMode {
     //sets power of intake
     public void setIntakePower(double power){
         robot.intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.intake2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.intake.setPower(power);
+        robot.intake2.setPower(power);
     }
-    //set servo position
-    public void controlLaunchServo(double position){
-        robot.barrierServo.setPosition(position);
+    //set indexer position
+    public void controlIndexServo(double position){
+        robot.theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy.setPosition(position);
+        sleep(300);
+    }
+    //Indexer
+    public void shootRings(double x){
+        for (i=0; i<x; i++) {
+            controlIndexServo(.6);
+            controlIndexServo(1);
+        }
     }
     //set claw position
     public void controlClawServo(double position){
@@ -373,74 +379,42 @@ public class AutonomousMethods extends LinearOpMode {
         robot.armServo.setPosition(position);
     }
     //flywheel
-    public void setShooterPower(double power){
-        robot.shooter.setPower(power);
+    public void setShooterPower(double velocity){
+        robot.shooter.setVelocity(velocity);
     }
     //shoots all three rings at the same angle
     public void shoot(double a, double power){
-        robot.shooter.setVelocity(power);
+        setShooterPower(power);
         toAngle(a, .5);
-        controlLaunchServo(0);
-        setIntakePower(1);
-        sleep(3000);
-        controlLaunchServo(1);
-        setIntakePower(0);
-    }
-    public void shoot2(double a, double power){
-        robot.shooter.setVelocity(power);
-        toAngle(a, .5);
-        controlLaunchServo(0);
-        //setIntakePower(1);
-        //sleep(3000);
-        //controlLaunchServo(1);
-        //setIntakePower(0);
+        shootRings(3);
     }
     //shoots all three rings at 3 different angles
     public void powerShot(double a1, double a2, double a3, double power, double powerE){
-        robot.shooter.setVelocity(power);
+        setShooterPower(power);
         toAngle(a1,.3);
-        setIntakePower(0);
-        controlLaunchServo(0);
-        setIntakePower(.15);
-        sleep(500);
-        controlLaunchServo(1);
-        sleep(500);
-        setIntakePower(1);
+        shootRings(1);
 
+        setShooterPower(powerShotPower2);
         toAngle(a2, .3);
-        setIntakePower(0);
-        controlLaunchServo(0);
-        setIntakePower(.15);
-        sleep(500);
-        controlLaunchServo(1);
-        sleep(500);
-        setIntakePower(1);
+        shootRings(1);
 
         toAngle(a3, .3);
-        setIntakePower(0);
-        controlLaunchServo(0);
-        setIntakePower(.15);
-        sleep(500);
-        robot.shooter.setVelocity(powerE);
-        controlLaunchServo(1);
-        setIntakePower(0);
+        shootRings(1);
+
+        setShooterPower(powerE);
     }
     //dropping wobble goal
     public void dropWobbleGoal(){
-        controlArmServo(1);//down
-        sleep(1000);
         controlClawServo(.7);//open
         controlArmServo(0);//up
         sleep(500);
     }
     //picking up wobble goal
-    public void pickUpWobbleGoal(double distanceRight){
-        controlArmServo(1);//down
-        sleep(1000);
-        strafeRight(.5, distanceRight);
+    public void pickUpWobbleGoal(double distanceLeft){
+        strafeLeft(.5, distanceLeft);
         controlClawServo(.25);//close
         sleep(500);
-        controlArmServo(0);//up
+        //controlArmServo(0);//up
     }
     //magic stuff
     public String magic8() {

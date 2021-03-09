@@ -1,10 +1,10 @@
+
 //Run code for the left blue position
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-@Disabled
+        import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+        import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 @Autonomous(name = "BlueLeft", group = "Taus")
 public class BlueLeft extends AutonomousMethods {
@@ -19,45 +19,42 @@ public class BlueLeft extends AutonomousMethods {
         telemetry.addData("rings", numberOfRings);
         telemetry.update();
         bmp.recycle();
-        magic8();
 
-        waitForStart();
 
         stopAndResetEncoders();
 
         //pick up wobble goal
         controlClawServo(.25);//close
-        controlArmServo(.35);//up
-
+        controlArmServo(1);//down
         //shoot
-        setIntakePower(.5);
-        setShooterPower(shooterPower);
-        forward(1, 2.5,startOffset);
-        setIntakePower(0);
-        shoot(30, shooterPower);
+        robot.shooter.setVelocityPIDFCoefficients(p,i,d,f);
+        robot.shooter.setVelocity(shooterPower);
+        forward(.5, 2.5, startOffset);
+        shoot(-18, shooterPower);
         setShooterPower(0);
-        toAngle(0, .3);
+        toAngle(0, .5);
 
         switch (numberOfRings){
             case 0:
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(1,  0, 4);//forward
-                strafeRight(.5, 18);//right
+                forward(.5,  0, 10);//forward
+                strafeLeft(.5, 24);//right
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
-                strafeLeft(.5, 12);//left
-                backward(1, 2,8);//back
+                strafeRight(.5, 18);//left
+                controlArmServo(1);//down
+                backward(.5, 2,10);//back
                 //arm down
                 pickUpWobbleGoal(6);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(1, 2,16);//forward
-                strafeRight(.5, 6);//right
+                forward(.5, 2,20);//forward
+                strafeLeft(.5, 12);//right
                 //drop wobble goal
                 dropWobbleGoal();
 
@@ -65,22 +62,24 @@ public class BlueLeft extends AutonomousMethods {
                 sleep(1000);
                 break;
             case 1:
+                setShooterPower(0);
                 //Dropping 1st Wobble Goal
                 //move to square
-                forward(1, 1,4);
+                forward(1, 1,10);
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
-                backward(1, 3,8);
+                controlArmServo(1);//down
+                backward(1, 3,10);
                 //arm down
                 pickUpWobbleGoal(12);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                strafeLeft(.5, 18);
-                forward(1, 3,16);
+                strafeRight(.5, 18);
+                forward(1, 3,22);
                 //drop wobble goal
                 dropWobbleGoal();
 
@@ -88,33 +87,35 @@ public class BlueLeft extends AutonomousMethods {
                 backward(1,1, 0);
                 break;
             case 4:
+                //picking up rings
+                toAngle(45, .5);
+                backward(.5, .5, 0);
+                forward(.5, .5, 0);
+
+                //shooting 2nd time
+                shoot(-18, shooterPower);
+                setShooterPower(0);
+                toAngle(0, .5);
+
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(1,  2,4);//forward
-                strafeRight(.5, 18);//right
+                forward(1,  2,10);//forward
+                strafeLeft(.5, 24);//right
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
-                strafeLeft(.5, 18);//left
-                toAngle(0, .3);
-                backward(1, 4,8);//back
-                toAngle(0, .3);
-                //arm down
+                strafeRight(.5, 24);//left
                 controlArmServo(1);//down
-                sleep(500);
-                strafeRight(.5, 12);
-                controlClawServo(.25);//close
-                sleep(500);
-                controlArmServo(0);//up
+                backward(1, 4,10);//back
+                pickUpWobbleGoal(12);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                toAngle(0, .3);
-                strafeLeft(1, 12);
-                forward(1, 4,16);//forward
-                strafeRight(.5, 18);//right
+                strafeRight(.5, 12);
+                forward(1, 2,6);//forward
+                strafeLeft(.5, 12);//right 24
                 //drop wobble goal
                 dropWobbleGoal();
 

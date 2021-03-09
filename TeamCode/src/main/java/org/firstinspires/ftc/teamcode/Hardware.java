@@ -19,10 +19,11 @@ public class Hardware {
     public DcMotor frontRightMotor = null;
     public DcMotor backLeftMotor = null;
     public DcMotor backRightMotor = null;
-    public Servo barrierServo = null;
+    public Servo theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy = null;
     public Servo clawServo = null;
     public Servo armServo = null;
     public DcMotor intake = null;
+    public DcMotor intake2 = null;
     public DcMotorEx shooter = null;
     public boolean encoder;
     public BNO055IMU imu; //inertial measurement unit
@@ -52,8 +53,9 @@ public class Hardware {
         backRightMotor = hwMap.dcMotor.get("back_right");
         clawServo = hwMap.servo.get("claw");
         armServo = hwMap.servo.get("arm");
-        barrierServo = hwMap.servo.get("barrier_servo");
+        theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy = hwMap.servo.get("indexer");
         intake = hwMap.dcMotor.get("intake");
+        intake2 = hwMap.dcMotor.get("intake2");
         shooter = hwMap.get(DcMotorEx.class, "shooter");
 
 
@@ -65,6 +67,7 @@ public class Hardware {
         backLeftMotor.setDirection(DcMotor.Direction.FORWARD);
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
         intake.setDirection(DcMotor.Direction.REVERSE);
+        intake2.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotorEx.Direction.REVERSE);
 
         if(encoder) {
@@ -75,6 +78,7 @@ public class Hardware {
             backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            intake2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             frontLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -83,6 +87,7 @@ public class Hardware {
             backRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            intake2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         }
         else{
@@ -102,6 +107,7 @@ public class Hardware {
         backRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intake2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         shooter.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         frontLeftMotor.setPower(0);
@@ -110,6 +116,7 @@ public class Hardware {
         backRightMotor.setPower(0);
 
         intake.setPower(0);
+        intake2.setPower(0);
         shooter.setPower(0);
 
 
