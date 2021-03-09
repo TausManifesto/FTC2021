@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 
-@TeleOp(name = "Tele-Op", group = "Taus")
+@TeleOp(name = "Double Driver", group = "Taus")
 
 public class Teleop extends LinearOpMode {
 

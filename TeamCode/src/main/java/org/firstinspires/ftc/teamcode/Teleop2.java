@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 
-@TeleOp(name = "Tele-Op2", group = "Taus")
+@TeleOp(name = "Single driver", group = "Taus")
 @Config
 public class Teleop2 extends LinearOpMode {
 
@@ -262,6 +262,9 @@ public class Teleop2 extends LinearOpMode {
     public void updatePosition(){
         if (gamepad1.dpad_left){
             method.stopAndResetEncoders();
+            method.currentXPosition = 0;
+            method.currentYPosition = 135;
+            method.resetAngle = method.getHeading() + method.resetAngle;
         }
 
         double rotation = (method.robot.backLeftMotor.getCurrentPosition() - method.robot.frontRightMotor.getCurrentPosition()) / 2.0;

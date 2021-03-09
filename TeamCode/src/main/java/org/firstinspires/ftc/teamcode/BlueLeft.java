@@ -6,7 +6,7 @@ package org.firstinspires.ftc.teamcode;
         import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
         import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
-@Autonomous(name = "BlueLeft", group = "Taus")
+@Autonomous(name = "Auto", group = "Taus")
 public class BlueLeft extends AutonomousMethods {
 
     @Override
@@ -36,25 +36,26 @@ public class BlueLeft extends AutonomousMethods {
 
         switch (numberOfRings){
             case 0:
+                setShooterPower(0);
+
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(.5,  0, 10);//forward
-                strafeLeft(.5, 24);//right
+                forward(.5,  0, 20);//forward
+                strafeLeft(.5, 24);//left
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
-                strafeRight(.5, 18);//left
+                strafeRight(.5, 18);//right
                 controlArmServo(1);//down
-                backward(.5, 2,10);//back
+                backward(.5, 2,200);//back
                 //arm down
                 pickUpWobbleGoal(6);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(.5, 2,20);//forward
-                strafeLeft(.5, 12);//right
+                forward(.5, 2,10);//forward
                 //drop wobble goal
                 dropWobbleGoal();
 
@@ -62,33 +63,43 @@ public class BlueLeft extends AutonomousMethods {
                 sleep(1000);
                 break;
             case 1:
+                //picking up rings
+                toAngle(45, 1);
+                backward(.5, .5, 0);
+                forward(.5, .5, 0);
+
+                //shooting 2nd time
+                shoot(-18, shooterPower);
                 setShooterPower(0);
+                toAngle(0, .5);
+
                 //Dropping 1st Wobble Goal
                 //move to square
-                forward(1, 1,10);
+                forward(1, 1,20);
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
                 controlArmServo(1);//down
-                backward(1, 3,10);
+                backward(1, 3,20);
                 //arm down
                 pickUpWobbleGoal(12);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                strafeRight(.5, 18);
-                forward(1, 3,22);
+                strafeRight(.5, 18);//right
+                forward(1, 3,0);
+                toAngle(90, 1);
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //park
-                backward(1,1, 0);
+                sleep(1000);
                 break;
             case 4:
                 //picking up rings
-                toAngle(45, .5);
+                toAngle(45, 1);
                 backward(.5, .5, 0);
                 forward(.5, .5, 0);
 
@@ -100,13 +111,13 @@ public class BlueLeft extends AutonomousMethods {
                 //Dropping 1st Wobble goal
                 //move to square
                 forward(1,  2,10);//forward
-                strafeLeft(.5, 24);//right
+                strafeLeft(.5, 24);//left
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
-                strafeRight(.5, 24);//left
+                strafeRight(.5, 24);//right
                 controlArmServo(1);//down
                 backward(1, 4,10);//back
                 pickUpWobbleGoal(12);
@@ -115,7 +126,7 @@ public class BlueLeft extends AutonomousMethods {
                 //forward
                 strafeRight(.5, 12);
                 forward(1, 2,6);//forward
-                strafeLeft(.5, 12);//right 24
+                strafeLeft(.5, 6);//left
                 //drop wobble goal
                 dropWobbleGoal();
 
