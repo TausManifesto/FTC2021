@@ -66,7 +66,7 @@ public class Hardware {
         frontRightMotor.setDirection(DcMotor.Direction.REVERSE);
         backLeftMotor.setDirection(DcMotor.Direction.FORWARD);
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
-        intake.setDirection(DcMotor.Direction.REVERSE);
+        intake.setDirection(DcMotor.Direction.FORWARD);
         intake2.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotorEx.Direction.REVERSE);
 
@@ -122,7 +122,6 @@ public class Hardware {
 
 
         //Define Sensors
-
         imu = hwMap.get(BNO055IMU.class, "imu");
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();

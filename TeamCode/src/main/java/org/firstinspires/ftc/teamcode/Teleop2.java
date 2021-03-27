@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.opencv.core.Mat;
 
 
 @TeleOp(name = "Single driver", group = "Taus")
@@ -67,10 +68,11 @@ public class Teleop2 extends LinearOpMode {
             telemetry.addData("target", (int)method.shooterRpm);
             telemetry.addData("current", (int)(method.robot.shooter.getVelocity()/28.0)*60);
            telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
-
+           telemetry.addData("ticks", method.robot.frontLeftMotor.getCurrentPosition());
             dashboardTelemetry.addData("current", (int)(method.robot.shooter.getVelocity()/28.0)*60);
             dashboardTelemetry.addData("target", (int)method.shooterRpm);
             dashboardTelemetry.addData("0", 0);
+            dashboardTelemetry.addData("ticks", method.robot.backLeftMotor.getCurrentPosition());
             dashboardTelemetry.update();
 
             telemetry.update();
@@ -84,14 +86,14 @@ public class Teleop2 extends LinearOpMode {
         method.runWithEncoders();
         if (gamepad1.right_stick_button&&!leftStick){
             if (multiplier==1){
-                multiplier=2;
+                multiplier=10;
             }
             else {
                 multiplier=1;
             }
             leftStick = true;
         }
-        if(!gamepad1.left_stick_button){
+        if(!gamepad1.right_stick_button){
             leftStick = false;
         }
         double scaleFactor = 1;
@@ -110,7 +112,7 @@ public class Teleop2 extends LinearOpMode {
         double gyroAngle = method.getHeading() * Math.PI / 180; //Converts gyroAngle into radians
 
         //Robot Centric
-        //gyroAngle = Math.PI / 2;
+        //gyroAngle = 0;
 
         //inverse tangent of game-pad stick y/ game-pad stick x = angle of joystick
         double joystickAngle = Math.atan2(stickY, stickX);
@@ -132,8 +134,8 @@ public class Teleop2 extends LinearOpMode {
             scaleFactor = Math.abs(yComponent + rotationValue);
         }
         method.robot.frontLeftMotor.setPower(((xComponent + rotationValue) / scaleFactor)/multiplier);
-        method.robot.backLeftMotor.setPower(((yComponent + rotationValue) / scaleFactor)/multiplier);//y
-        method.robot.backRightMotor.setPower(((xComponent - rotationValue) / scaleFactor)/multiplier);//x
+        method.robot.backLeftMotor.setPower(((yComponent + rotationValue) / scaleFactor)/multiplier);
+        method.robot.backRightMotor.setPower(((xComponent - rotationValue) / scaleFactor)/multiplier);
         method.robot.frontRightMotor.setPower(((yComponent - rotationValue) / scaleFactor)/multiplier);
     }
 
@@ -256,14 +258,14 @@ public class Teleop2 extends LinearOpMode {
     }
     public void goToPosition(){
         if(gamepad1.left_stick_button){
-            method.goToPosition(32.5, method.currentXPosition, method.currentYPosition, 100, 100);
+            method.goToPosition(0, method.currentXPosition, method.currentYPosition, 24, 72);
         }
     }
     public void updatePosition(){
         if (gamepad1.dpad_left){
             method.stopAndResetEncoders();
-            method.currentXPosition = 0;
-            method.currentYPosition = 135;
+            method.currentXPosition = 9;
+            method.currentYPosition = 9;
             method.resetAngle = method.getHeading() + method.resetAngle;
         }
 
@@ -275,21 +277,35 @@ public class Teleop2 extends LinearOpMode {
 
         double currentX = method.robot.backRightMotor.getCurrentPosition()+rotation;
         double deltaX1 = currentX-previousX;
-        //telemetry.addData("Delta x1", deltaX1);
+        telemetry.addData("Delta x1", deltaX1);
 
-        double theta = Math.atan2(deltaY1,deltaX1);
+        double thetaX = Math.PI/4;
+        double thetaY = 3*Math.PI/4;
+
         //changing from a [+] with | being y and -- being x to an [X] with \ being y and / being x (forward is forward)
-        double rotatedTheta = theta + (Math.PI / 4);
+        //double rotatedTheta = theta + (Math.PI / 4);
         double gyroAngle = method.getHeading() * Math.PI / 180; //Converts gyroAngle into radians
 
-        double calculationAngle =  rotatedTheta+gyroAngle;
+        double calculationAngleX =  thetaX-gyroAngle;
+        double calculationAngleY =  thetaY-gyroAngle;
+        telemetry.addData("angleX", calculationAngleX);
+        //telemetry.addData("angleY", calculationAngleY);
 
-        double deltaY2 = Math.sin(calculationAngle) * Math.abs(deltaY1);// + Math.sin(calculationAngle) * Math.abs(deltaX1);
-        double deltaX2 = Math.cos(calculationAngle) * Math.abs(deltaY1);
-
-        if((Math.cos(calculationAngle) * Math.abs(deltaY1)>0&&Math.cos(calculationAngle) * Math.abs(deltaX1)<0)||(Math.cos(calculationAngle) * Math.abs(deltaY1)<0&&Math.cos(calculationAngle) * Math.abs(deltaX1)>0)) {
-            //deltaY2 = Math.sin(calculationAngle) * Math.abs(deltaY1);
-            deltaX2 = Math.cos(calculationAngle) * Math.abs(deltaY1) + Math.cos(calculationAngle) * Math.abs(deltaX1);
+        double deltaY2 = Math.sin(calculationAngleY) * deltaY1;
+        if(Math.sin(calculationAngleX) * deltaX1>Math.sin(calculationAngleY) * deltaY1){
+            deltaY2 = Math.sin(calculationAngleX) * deltaX1;
+        }
+        //    telemetry.addLine("1");
+        if((Math.sin(calculationAngleY) * deltaY1>0&&Math.sin(calculationAngleX) * deltaX1<0)||(Math.sin(calculationAngleY) * deltaY1<0&&Math.sin(calculationAngleX) * deltaX1>0)) {
+            deltaY2 = Math.sin(calculationAngleY) * deltaY1 + Math.sin(calculationAngleX) * deltaX1;
+        //    telemetry.addLine("2");
+        }
+        double deltaX2 = Math.cos(calculationAngleX) * deltaX1;
+        if(Math.cos(calculationAngleY) * deltaY1>Math.cos(calculationAngleX) * deltaX1){
+        //    deltaX2 = Math.cos(calculationAngleY) * deltaY1;
+        }
+        if((Math.cos(calculationAngleY) * deltaY1>0&&Math.cos(calculationAngleX) * deltaX1<0)||(Math.cos(calculationAngleY) * deltaY1<0&&Math.cos(calculationAngleX) * deltaX1>0)) {
+            deltaX2 = Math.cos(calculationAngleY) * deltaY1 + Math.cos(calculationAngleX) * deltaX1;
         }
         //telemetry.addData("Delta y2", deltaY2);
 
@@ -305,23 +321,23 @@ public class Teleop2 extends LinearOpMode {
             method.currentYPosition += DistY;
             previousY = currentY;
 
-            if(method.currentYPosition<0){
-                method.currentYPosition = 0;
+            if(method.currentYPosition<9){
+                method.currentYPosition = 9;
             }
 
-            else if (method.currentYPosition>135){
-                method.currentYPosition = 135;
+            else if (method.currentYPosition>132.5){
+                method.currentYPosition = 132.5;
             }
 
             method.currentXPosition += DistX;
             previousX = currentX;
 
-            if(method.currentXPosition<0){
-                method.currentXPosition = 0;
+            if(method.currentXPosition<9){
+                method.currentXPosition = 9;
             }
 
-            else if (method.currentXPosition>88){
-                method.currentXPosition = 88;
+            else if (method.currentXPosition>86){
+                method.currentXPosition = 86;
             }
         }
     }

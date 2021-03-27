@@ -31,7 +31,7 @@ public class BlueRight extends AutonomousMethods {
         //shoot
         setIntakePower(.5);
         setShooterPower(shooterPower);
-        forward(1, 2.5,startOffset);
+        forward(.5, 2.5, startOffset);
         setIntakePower(0);
         shoot(30, shooterPower);
         setShooterPower(0);
@@ -41,7 +41,7 @@ public class BlueRight extends AutonomousMethods {
             case 0:
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(1,  0, 4);//forward
+                forward(.5,  0, 4);//forward
                 strafeRight(.5, 18);//right
                 //drop wobble goal
                 dropWobbleGoal();
@@ -49,13 +49,13 @@ public class BlueRight extends AutonomousMethods {
                 //Picking up 2nd Wobble goal
                 //move back
                 strafeLeft(.5, 12);//left
-                backward(1, 2,8);//back
+                backward(.5, 2,8);//back
                 //arm down
                 pickUpWobbleGoal(6);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(1, 2,16);//forward
+                forward(.5, 2,16);//forward
                 strafeRight(.5, 6);//right
                 //drop wobble goal
                 dropWobbleGoal();

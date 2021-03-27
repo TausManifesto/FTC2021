@@ -27,10 +27,13 @@ public class Teleop extends LinearOpMode {
     boolean isXPressed = false;
     boolean dpadPressed = false;
     boolean leftStick = false;
+    boolean accelerating = true;
 
     double multiplier = 1;
+    double speedFactor = 1;
     double previousY = 0;
     double previousX = 0;
+    double prevYMagnitude;
 
     @Override
     public void runOpMode() {
@@ -46,6 +49,7 @@ public class Teleop extends LinearOpMode {
         dashboardTelemetry.addLine("starting");
         dashboardTelemetry.update();
 
+        method.runtime2.reset();
         while (opModeIsActive()) {
             drive();
 
@@ -57,7 +61,7 @@ public class Teleop extends LinearOpMode {
             shoot();
             powerShot();
 
-            goToPosition();
+            //goToPosition();
             updatePosition();
             resetAngle();
 
@@ -81,11 +85,11 @@ public class Teleop extends LinearOpMode {
     public void drive(){
         method.runWithEncoders();
         if (gamepad1.right_stick_button&&!leftStick){
-            if (multiplier==1){
-                multiplier=2;
+            if (speedFactor==1){
+                speedFactor = .5;
             }
             else {
-                multiplier=1;
+                speedFactor = 1;
             }
             leftStick = true;
         }
@@ -96,19 +100,19 @@ public class Teleop extends LinearOpMode {
         double rotationValue = 0;
         double stickX = 0;
         double stickY = 0;
-        if(Math.abs(gamepad1.right_stick_x)>.1) {
+        if(Math.abs(gamepad1.right_stick_x)>.05) {
             rotationValue = gamepad1.right_stick_x;
         }
         else{
             rotationValue=0;
         }
-        if(Math.abs(gamepad1.left_stick_x)>.1) {
+        if(Math.abs(gamepad1.left_stick_x)>.05) {
             stickX = gamepad1.left_stick_x;
         }
         else {
             stickX=0;
         }
-        if(Math.abs(gamepad1.left_stick_y)>.1) {
+        if(Math.abs(gamepad1.left_stick_y)>.05) {
             stickY = -gamepad1.left_stick_y;
         }
         else {
@@ -138,15 +142,32 @@ public class Teleop extends LinearOpMode {
         if (yComponent + rotationValue > 1 && yComponent + rotationValue > scaleFactor) {
             scaleFactor = Math.abs(yComponent + rotationValue);
         }
-        method.robot.frontLeftMotor.setPower(((xComponent + rotationValue) / scaleFactor)/multiplier);
-        method.robot.backLeftMotor.setPower(((yComponent + rotationValue) / scaleFactor)/multiplier);//y
-        method.robot.backRightMotor.setPower(((xComponent - rotationValue) / scaleFactor)/multiplier);//x
-        method.robot.frontRightMotor.setPower(((yComponent - rotationValue) / scaleFactor)/multiplier);
+        //double deltaYMagnitude = magnitude-prevMagnitude;
+        //if(deltaYMagnitude/method.runtime2.seconds()>1&&!accelerating){
+        //    method.runtime3.reset();
+        //    accelerating = true;
+        //}
+        //prevYMagnitude = magnitude;
+
+
+        //if(accelerating = true){
+        //    multiplier = method.runtime3.seconds()/magnitude;
+        //    prevMagnitude=magnitude*multiplier;
+        //    if (multiplier>1){
+        //        accelerating = false;
+        //    }
+       // }
+        //else{
+        //    multiplier = 1;
+        //}
+        method.robot.frontLeftMotor.setPower((((xComponent + rotationValue) / scaleFactor)*multiplier)*speedFactor);
+        method.robot.backLeftMotor.setPower((((yComponent + rotationValue) / scaleFactor)*multiplier)*speedFactor);//y
+        method.robot.backRightMotor.setPower((((xComponent - rotationValue) / scaleFactor)*multiplier)*speedFactor);//x
+        method.robot.frontRightMotor.setPower((((yComponent - rotationValue) / scaleFactor)*multiplier)*speedFactor);
+        method.runtime2.reset();
     }
 
     public void shooter(){
-        //method.robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
         if(gamepad2.x && !isXPressed){
             isXPressed = true;
             if (!shooterOn) {
@@ -188,14 +209,15 @@ public class Teleop extends LinearOpMode {
         if(gamepad2.right_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.shoot(-18, method.shooterPower);
+            method.setAllMotorsTo(0);
+            method.shoot(-16, method.shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad2.left_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.powerShot(10, 16, 20, method.powerShotPower, method.shooterPower);
+            method.powerShot(10, 15, 20, method.powerShotPower, method.shooterPower);
         }
     }
 
@@ -211,7 +233,7 @@ public class Teleop extends LinearOpMode {
     public void intake(){
         method.robot.intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         if (Math.abs(gamepad2.left_stick_y)>.05) {
-            method.setIntakePower(-gamepad2.left_stick_y*.5);
+            method.setIntakePower(-gamepad2.left_stick_y);
         }
         else{
             method.setIntakePower(0);
@@ -255,13 +277,13 @@ public class Teleop extends LinearOpMode {
     }
 
     public void resetAngle() {
-        if (gamepad1.right_trigger>.1) {
+        if (gamepad1.right_bumper) {
             method.resetAngle = method.getHeading() + method.resetAngle;
         }
     }
     public void goToPosition(){
         if(gamepad1.left_trigger>.1){
-            method.goToPosition(0, method.currentXPosition, method.currentYPosition, 100, 100);
+            method.goToPosition(0, method.currentXPosition, method.currentYPosition, 24, 72);
         }
     }
     public void updatePosition(){
