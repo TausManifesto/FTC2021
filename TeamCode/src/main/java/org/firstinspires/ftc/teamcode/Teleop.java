@@ -43,6 +43,7 @@ public class Teleop extends LinearOpMode {
         method.robot.shooter.setVelocityPIDFCoefficients(method.p,method.i,method.d,method.f);
         waitForStart();
         method.setShooterPower(method.shooterPower);
+        method.controlIndexServo(1);
         FtcDashboard dashboard = FtcDashboard.getInstance();
         Telemetry dashboardTelemetry = dashboard.getTelemetry();
 
@@ -260,7 +261,7 @@ public class Teleop extends LinearOpMode {
         if (isRunning){
             if (!clawClosed){
                 if (method.runtime.seconds() > .5) {
-                    method.controlArmServo(0);//move arm up
+                    method.controlArmServo(.25);//move arm up
                     clawClosed = true;
                     isRunning = false;
                 }

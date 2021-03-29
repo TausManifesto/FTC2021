@@ -84,11 +84,11 @@ public class AutonomousMethods extends LinearOpMode {
     double robotLength = 18;
     double startOffset = 1.5;
 
-    public double staticShooterRpm = 2050;
-    public double shooterRpm = 2050;
-    public double powerShotRpm = 1900;
-    public double powerShotRpm2 = 1900;
-    public double powerShotRpm3 = 1900;
+    public double staticShooterRpm = 2025;
+    public double shooterRpm = 2025;
+    public double powerShotRpm = 1850;
+    public double powerShotRpm2 = 1875;
+    public double powerShotRpm3 = 1875;
     public double shooterPower = (shooterRpm*28)/60.0;
     public double powerShotPower = (powerShotRpm*28)/60.0;
     public double powerShotPower2 = (powerShotRpm2*28)/60.0;
@@ -98,7 +98,7 @@ public class AutonomousMethods extends LinearOpMode {
     public static double d = 0;
     public static double f = 14.3;
 
-    public double kFactor = 1.09;
+    public double kFactor = 1.15;//1.09
 
     public double resetAngle = 0;
     public ElapsedTime runtime = new ElapsedTime();
@@ -252,7 +252,7 @@ public class AutonomousMethods extends LinearOpMode {
             //}
         }
         setAllMotorsTo(0);
-        stopAndResetEncoders();
+        //stopAndResetEncoders();
         sleep(250);
     }
     //strafing right distance (inch) with power [0, 1]
@@ -460,13 +460,25 @@ public class AutonomousMethods extends LinearOpMode {
     //set indexer position
     public void controlIndexServo(double position){
         robot.theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy.setPosition(position);
-        sleep(300);
+//        if(position>=robot.theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy.getPosition()) {
+//            while (robot.theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy.getPosition() < position) {
+//                idle();
+//            }
+//        }
+//        else{
+//            while (robot.theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy.getPosition() > position) {
+//                idle();
+//            }
+//        }
+        sleep(100);
+
     }
     //Indexer
     public void shootRings(double x){
         for (i=0; i<x; i++) {
-            controlIndexServo(.6);
+            controlIndexServo(.575);
             controlIndexServo(1);
+            sleep(400);
         }
     }
     //set claw position
@@ -484,13 +496,14 @@ public class AutonomousMethods extends LinearOpMode {
     //shoots all three rings at the same angle
     public void shoot(double a, double power){
         setShooterPower(power);
-        toAngle(a, .5);
+        toAngle(a, 1);
         setIntakePower(1);
         shootRings(3);
         setIntakePower(0);
     }
     //shoots all three rings at 3 different angles
     public void powerShot(double a1, double a2, double a3, double power, double powerE){
+        setIntakePower(1);
         setShooterPower(power);
         toAngle(a1,.3);
         shootRings(1);
@@ -504,6 +517,7 @@ public class AutonomousMethods extends LinearOpMode {
         shootRings(1);
 
         setShooterPower(powerE);
+        setIntakePower(0);
     }
     //dropping wobble goal
     public void dropWobbleGoal(){
@@ -518,7 +532,7 @@ public class AutonomousMethods extends LinearOpMode {
         strafeLeft(.5, distanceLeft);
         controlClawServo(.25);//close
         sleep(500);
-        controlArmServo(.75);//up
+        controlArmServo(.7);//up
     }
     //magic stuff
     public String magic8() {
@@ -702,7 +716,7 @@ public class AutonomousMethods extends LinearOpMode {
         telemetry.addData("pixels", pixels);
         //telemetry.addData("width=",w);
         //telemetry.addData("height=",h);
-        if(pixels > 4000){
+        if(pixels > 3500){
             rings = 4;
 
         }else if (pixels > 1000){
