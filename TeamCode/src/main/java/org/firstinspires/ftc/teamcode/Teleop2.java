@@ -42,6 +42,10 @@ public class Teleop2 extends LinearOpMode {
         waitForStart();
         method.robot.shooter.setVelocityPIDFCoefficients(method.p,method.i,method.d,method.f);
         method.setShooterPower(method.shooterPower);
+        method.controlArmServo(1);//drop
+        sleep(250);
+        method.controlClawServo(.7);//open
+        method.controlIndexServo(1);
         FtcDashboard dashboard = FtcDashboard.getInstance();
         Telemetry dashboardTelemetry = dashboard.getTelemetry();
 
@@ -142,7 +146,7 @@ public class Teleop2 extends LinearOpMode {
     public void shooter(){
         //method.robot.shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        if(gamepad1.x && !isXPressed){
+        if(gamepad1.b && !isXPressed){
             isXPressed = true;
             if (!shooterOn) {
                 method.setShooterPower(method.shooterPower);
@@ -172,7 +176,7 @@ public class Teleop2 extends LinearOpMode {
             dpadPressed=true;
         }
 
-        if(!gamepad1.x){
+        if(!gamepad1.b){
             isXPressed = false;
         }
         if(!gamepad1.dpad_up && !gamepad1.dpad_down && !gamepad1.dpad_right){
@@ -183,7 +187,7 @@ public class Teleop2 extends LinearOpMode {
         if(gamepad1.right_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.shoot(0, method.shooterPower);
+            method.shoot(-17, method.shooterPower);
         }
     }
     public void powerShot(){
@@ -217,7 +221,7 @@ public class Teleop2 extends LinearOpMode {
         }
     }
     public void claw(){
-        if((gamepad1.b && !isBPressed)){
+        if((gamepad1.x && !isBPressed)){
             isBPressed = true;
             if (!clawClosed) {
                 method.controlClawServo(.25);//closing claw
@@ -229,7 +233,7 @@ public class Teleop2 extends LinearOpMode {
             isRunning = true;
             method.runtime.reset();
         }
-        if(!gamepad1.b){
+        if(!gamepad1.x){
             isBPressed = false;
         }
         if (isRunning){

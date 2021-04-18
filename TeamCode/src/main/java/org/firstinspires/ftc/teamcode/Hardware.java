@@ -15,11 +15,12 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class Hardware {
 
     // Motor variable names
-    public DcMotor frontLeftMotor = null;
-    public DcMotor frontRightMotor = null;
-    public DcMotor backLeftMotor = null;
-    public DcMotor backRightMotor = null;
-    public Servo theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy = null;
+    public DcMotorEx frontLeftMotor = null;
+    public DcMotorEx frontRightMotor = null;
+    public DcMotorEx backLeftMotor = null;
+    public DcMotorEx backRightMotor = null;
+    public Servo IndexerServo = null;//theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy
+    public Servo Blocker = null;
     public Servo clawServo = null;
     public Servo armServo = null;
     public DcMotor intake = null;
@@ -47,13 +48,15 @@ public class Hardware {
         period.reset();
 
         // Define Motors
-        frontLeftMotor = hwMap.dcMotor.get("front_left");
-        frontRightMotor = hwMap.dcMotor.get("front_right");
-        backLeftMotor = hwMap.dcMotor.get("back_left");
-        backRightMotor = hwMap.dcMotor.get("back_right");
+        frontLeftMotor = hwMap.get(DcMotorEx.class,"front_left");
+        frontRightMotor = hwMap.get(DcMotorEx.class,"front_right");
+        backLeftMotor = hwMap.get(DcMotorEx.class,"back_left");
+        backRightMotor = hwMap.get(DcMotorEx.class,"back_right");
         clawServo = hwMap.servo.get("claw");
         armServo = hwMap.servo.get("arm");
-        theIndexerServoThatGoesOnTheFrontOfTheRobotAndKicksRingsIntoTheShooterSoWeCanScoreRingsAndBeVeryHappy = hwMap.servo.get("indexer");
+        IndexerServo = hwMap.servo.get("indexer");
+        Blocker = hwMap.servo.get("blocker");
+        //IndexerServo.setPosition();
         intake = hwMap.dcMotor.get("intake");
         intake2 = hwMap.dcMotor.get("intake2");
         shooter = hwMap.get(DcMotorEx.class, "shooter");
@@ -62,12 +65,13 @@ public class Hardware {
         // Initialize Motors
 
         // ******MAY CHANGE *******  Fix Forward/Reverse under testing
+        Blocker.setDirection(Servo.Direction.FORWARD);
         frontLeftMotor.setDirection(DcMotor.Direction.FORWARD);
         frontRightMotor.setDirection(DcMotor.Direction.REVERSE);
         backLeftMotor.setDirection(DcMotor.Direction.FORWARD);
         backRightMotor.setDirection(DcMotor.Direction.REVERSE);
         intake.setDirection(DcMotor.Direction.FORWARD);
-        intake2.setDirection(DcMotor.Direction.FORWARD);
+        intake2.setDirection(DcMotor.Direction.REVERSE);
         shooter.setDirection(DcMotorEx.Direction.REVERSE);
 
         if(encoder) {

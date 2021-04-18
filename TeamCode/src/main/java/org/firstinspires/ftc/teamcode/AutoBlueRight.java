@@ -4,11 +4,9 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
-@Disabled
-@Autonomous(name = "BlueLeft", group = "Taus")
-public class BlueLeft extends AutonomousMethods {
+@Autonomous(name = "Auto", group = "Taus")
+public class AutoBlueRight extends AutonomousMethods {
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -24,18 +22,20 @@ public class BlueLeft extends AutonomousMethods {
 
         stopAndResetEncoders();
         controlIndexServo(1);
-        controlBlocker(.375);
+        controlBlocker(0);
 
         //pick up wobble goal
         controlClawServo(.25);//close
         controlArmServo(.75);//down
         //shoot
         robot.shooter.setVelocityPIDFCoefficients(p,i,d,f);
-        robot.shooter.setVelocity(powerShotPower);
+        robot.shooter.setVelocity(shooterPower);
 
-        forward(.5, 2.5, startOffset);//3
-        powerShot(-5.5, -1, 3.5, powerShotPower, shooterPower);
+        forward(.5, 2.5, 3);
+        shoot(-20, shooterPower);
+        //powerShot(-5.5, -1, 3.5, powerShotPower, shooterPower);
         toAngle(0, .5);
+        sleep(100);
 
         switch (numberOfRings){
             case 0:
@@ -43,62 +43,58 @@ public class BlueLeft extends AutonomousMethods {
 
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(.5,  .5, 10);//forward +10
-                strafeLeft(.5, 0, 16);//left 15
+                forward(.5,  .5, 8);//forward
+                strafeLeft(.5, .5, 6);//left
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up 2nd Wobble goal
                 //move back
-                strafeRight(.3, 0,14);//right 15
+                strafeRight(.3, .5, 6);//right
                 toAngle(0, .1);
                 controlArmServo(1);//down
-                backward(.5, 2.5,6);//back 5
+                backward(.5, 2.5,5);//back
                 //arm down
-                pickUpWobbleGoal(6);//4
+                pickUpWobbleGoal(12);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(.5, 2,10);//forward 6
-                strafeLeft(.5, 0,4);//1
+                forward(.5, 2,10);//forward
+                strafeLeft(.5, 0,6);//left
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //park
-                //strafeRight(.5, 48+4);
+                strafeRight(.5, 0,4);//right
                 break;
             case 1:
                 //Dropping 1st Wobble Goal
                 //move to square
-                forward(1, 1.5,10);
+                forward(.5, 1,22);
                 //drop wobble goal
                 dropWobbleGoal();
 
                 //Picking up rings
                 //move back
-                backward(1, .5, 10);
-                strafeLeft(.5, 0,14);
-                toAngle(0, .2);
+                backward(.5, 1, 8);
+                toAngle(15, .2);
                 controlArmServo(1);//down
                 setIntakePower(1);
-                backward(1, 2,2);
+                backward(.5, 1,20);
 
                 //Picking up 2nd wobble goal
                 toAngle(-50, .5);
                 strafeLeft(.5, 0,4);
-                //strafeRight(.5, 6);
-                //backward(1, .5,8);
-                //strafeLeft(.5, 6);
                 //arm down
                 pickUpWobbleGoal(0);
                 toAngle(0, .5);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(1, 1.5, 0);
+                forward(.5, 1, 9);
                 shoot(-5, shooterPower);
-                forward(1, .5,0);
-                toAngle(90, 1);
+                forward(.5, 0,20);
+                toAngle(120, 1);
                 //drop wobble goal
                 dropWobbleGoal();
 
@@ -108,44 +104,46 @@ public class BlueLeft extends AutonomousMethods {
             case 4:
                 //Dropping 1st Wobble goal
                 //move to square
-                forward(1,  2.5,0);//forward
-                strafeLeft(.5, 0,14);//left
+                forward(.5,  2.5,0);//forward
+                strafeLeft(.5, .5,3);//left
                 //drop wobble goal
                 dropWobbleGoal();
+                strafeRight(.5, 0,4);
 
                 //Picking up rings
-                setShooterPower((2100*28)/60.0);
-                setIntakePower(.75);
+                setShooterPower((2200*28)/60.0);
+                setIntakePower(.65);
                 toAngle(0 ,.5);
                 controlArmServo(1);//down
-                backward(.5, 3.5, 0);
+                backward(.5, 3, 0);
+                backward(.2, 0, 10);
 
                 //shooting 2nd time
-                shoot(-10, (2100*28)/60.0);
-                setShooterPower((2150*28)/60.0);
-                toAngle(0, 5);
+                shoot(-10, (2225*28)/60.0);
+                setShooterPower((2225*28)/60.0);
+                toAngle(0, .5);
                 setIntakePower(1);
 
                 //picking up rings
-                backward(.5, 0, 2);
+                backward(.5, 0, 5);
 
                 //shooting 3rd time
-                shoot(-10, (2150*28)/60.0);
+                shoot(-10, (2225*28)/60.0);
 
                 //Picking up second wobble goal
-                toAngle(-50, .5);
-                strafeLeft(.5, 0,4);
+                backward(.5, 0, 5);
+                toAngle(-40, .5);
+                strafeLeft(.5, 0,2);
                 pickUpWobbleGoal(0);
                 toAngle(0, .5);
 
                 //Dropping 2nd Wobble goal
                 //forward
-                forward(1, 3.5, 2);
-                strafeLeft(1, 0,6);
-                dropWobbleGoal();
+                //forward(1, 3, 22);
+                //dropWobbleGoal();
 
                 //park
-                backward(1,2,0);//back
+                //backward(1,2,0);//back
                 break;
         }
 
