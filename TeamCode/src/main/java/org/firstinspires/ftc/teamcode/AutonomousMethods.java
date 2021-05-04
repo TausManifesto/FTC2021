@@ -6,9 +6,11 @@ import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.os.Handler;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.ReadWriteFile;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.util.Util;
 
@@ -25,10 +27,12 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraException;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraFrame;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraManager;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.internal.collections.EvictingBlockingQueue;
 import org.firstinspires.ftc.robotcore.internal.network.CallbackLooper;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
@@ -87,12 +91,13 @@ public class AutonomousMethods extends LinearOpMode {
     double robotLength = 18;
     double startOffset = 1.5;
 
-    public double staticShooterRpm = 2065;
-    public double shooterRpm = 2065;//2025
-    public double powerShotRpm = 1870;
-    public double powerShotRpm2 = 1925;
-    public double powerShotRpm3 = 1925;
+    public double staticShooterRpm = 2120;
+    public double shooterRpm = 2120;
+    public double powerShotRpm = 1915;//1870
+    public double powerShotRpm2 = 1925;//1925
+    public double powerShotRpm3 = 1925;//1925
     public double shooterPower = (shooterRpm*28)/60.0;
+    public double shootingAngle = -23;
     public double powerShotPower = (powerShotRpm*28)/60.0;
     public double powerShotPower2 = (powerShotRpm2*28)/60.0;
     public double powerShotPower3 = (powerShotRpm3*28)/60.0;
@@ -102,9 +107,10 @@ public class AutonomousMethods extends LinearOpMode {
     public static double f = 14.3;
 
     //public double kFactor = Math.sqrt(2);//1.09
-    public double kFactor = 1.2;
+    public double kFactor = 1.15;
 
     public double resetAngle = 0;
+    public double resetAngle2 = 0;
     public ElapsedTime runtime = new ElapsedTime();
     public ElapsedTime runtime2 = new ElapsedTime();
     public ElapsedTime runtime3 = new ElapsedTime();
@@ -115,6 +121,7 @@ public class AutonomousMethods extends LinearOpMode {
     public void initializeRobot() {
         robot.initializeHardware(hardwareMap);
         resetAngle=getHeading();
+        resetAngle2=getHeading2();
 
         //initializing camera
         callbackHandler = CallbackLooper.getDefault().getHandler();
@@ -135,12 +142,33 @@ public class AutonomousMethods extends LinearOpMode {
             openCamera();
             if (camera == null) return;
 
+            //picture();
             takePic();
             if (cameraCaptureSession == null) return;
             //sleep(5000);
             telemetry.addLine(magic8());
-            telemetry.update();
+            while(!isStarted()) {
+                telemetry.addData("system", robot.imu.getSystemStatus());
+                telemetry.addData("status", robot.imu.getCalibrationStatus());
+                // Get the calibration data
+                //BNO055IMU.CalibrationData calibrationData = robot.imu.readCalibrationData();
+
+                // Save the calibration data to a file. You can choose whatever file
+                // name you wish here, but you'll want to indicate the same file name
+                // when you initialize the IMU in an opmode in which it is used. If you
+                // have more than one IMU on your robot, you'll of course want to use
+                // different configuration file names for each.
+                //String filename = "AdafruitIMUCalibration.json";
+                //File file = AppUtil.getInstance().getSettingsFile(filename);
+                //ReadWriteFile.writeFile(file, calibrationData.serialize());
+                //telemetry.log().add("saved to '%s'", filename);
+                telemetry.update();
+            }
+            //shoot
+            robot.shooter.setVelocityPIDFCoefficients(p,i,d,f);
+            robot.shooter.setVelocity(shooterPower);
             waitForStart();
+            stopAndResetEncoders();
             savePic();
 
 
@@ -156,23 +184,33 @@ public class AutonomousMethods extends LinearOpMode {
     public void forward(double power, double squares, double inches) {
         stopAndResetEncoders();
         double distance = squares*distPerSquare+inches;
-        max = power* 48;//48
+        max = power* 24;//48
+        double scaleBottom = power * 6;
+        if (max>distance-scaleBottom){
+            max = distance-scaleBottom;
+        }
         runWithEncoders();
         int counts = (int) ((distance / wheelCircumference) * countsPerRotation);
-        double rampUpScale = distance/8;
+        double rampUpScale = 6*power;
+        if(distance-rampUpScale-scaleBottom<max){
+            rampUpScale = distance-max-scaleBottom;
+        }
         double initialAngle = getHeading();
+        double distanceGone = 0;
 
-        while (robot.frontLeftMotor.getCurrentPosition()<counts) {
+        while (distanceGone<distance) {
             double distanceGoneBl = wheelCircumference * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
             double distanceGoneBr = wheelCircumference * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
             double distanceGoneFl = wheelCircumference * (robot.frontLeftMotor.getCurrentPosition()/countsPerRotation);
             double distanceGoneFr = wheelCircumference * (robot.frontRightMotor.getCurrentPosition()/countsPerRotation);
 
+            distanceGone = (distanceGoneBl+distanceGoneFr+distanceGoneBr+distanceGoneFl)/4;
+
             double anglePower = 0;//errorToPower(Math.abs(initialAngle-getHeading()), 5,.1, 0);
-            double powerRaw = errorToPower(distance-distanceGoneFl, max, power, .05);
+            double powerRaw = errorToPower(distance-distanceGone, max, scaleBottom, power, .05);
 
             if (distanceGoneFl<rampUpScale){
-                setAllMotorsTo(errorToPower(distanceGoneFl, rampUpScale, power, .05));
+                setAllMotorsTo(errorToPower(distanceGone, rampUpScale, 0, power, .05));
             }
             else {
                 setPowerOfMotorsTo(powerRaw - anglePower, powerRaw - anglePower, powerRaw + anglePower, powerRaw + anglePower);
@@ -180,28 +218,42 @@ public class AutonomousMethods extends LinearOpMode {
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
-        //sleep(250);
+        //sleep(1000);
+        //telemetry.addData("dist", wheelCircumference * (robot.frontLeftMotor.getCurrentPosition()/countsPerRotation));
+        //telemetry.update();
     }
     //moving backward distance (inch) with power [0, 1]
     public void backward(double power, double squares, double inches) {
         stopAndResetEncoders();
         double distance = squares*distPerSquare+inches;
-        max = power* 48;
+        max = power* 24;//48
+        double scaleBottom = power * 6;
+        if (max>distance-scaleBottom){
+            max = (distance-scaleBottom)*.75;
+        }
         runWithEncoders();
         int counts = (int) -((distance / wheelCircumference) * countsPerRotation);
-        double rampUpScale = distance/8;
+        double rampUpScale = 6*power;
+        if(distance-rampUpScale-scaleBottom<max){
+            rampUpScale = distance-max-scaleBottom;
+        }
         double initialAngle = getHeading();
 
-        while (robot.frontLeftMotor.getCurrentPosition()>counts) {
+        double distanceGone = 0;
+
+        while (distanceGone>-distance) {
             double distanceGoneBl = wheelCircumference * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
             double distanceGoneBr = wheelCircumference * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
             double distanceGoneFl = wheelCircumference * ((robot.frontLeftMotor.getCurrentPosition())/countsPerRotation);
             double distanceGoneFr = wheelCircumference * (robot.frontRightMotor.getCurrentPosition()/countsPerRotation);
-            double anglePower = 0;//errorToPower(Math.abs(initialAngle-getHeading()), 5,.1, 0);
-            double powerRaw = -errorToPower(distance -(-distanceGoneFl), max, power, .05);
 
-            if (-distanceGoneFl<rampUpScale){
-                setAllMotorsTo(-errorToPower(-distanceGoneFl, rampUpScale, power, .05));
+            distanceGone = (distanceGoneBl+distanceGoneFr+distanceGoneBr+distanceGoneFl)/4;
+
+            double anglePower = 0;//errorToPower(Math.abs(initialAngle-getHeading()), 5,.1, 0);
+            double powerRaw = -errorToPower(distance -(-distanceGone), max, scaleBottom, power, .05);
+
+            if (-distanceGone<rampUpScale){
+                setAllMotorsTo(-errorToPower(-distanceGone, rampUpScale, 0,power, .05));
             }
             else {
                 setPowerOfMotorsTo(powerRaw + anglePower, powerRaw + anglePower, powerRaw - anglePower, powerRaw - anglePower);
@@ -209,28 +261,39 @@ public class AutonomousMethods extends LinearOpMode {
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
-        //sleep(250);
+        //sleep(1000);
     }
     //strafing left distance (inch) with power [0, 1]
     public void strafeLeft(double power, double squares, double inches) {
         stopAndResetEncoders();
         double distance = squares*distPerSquare+inches;
-        max = power*48;
-        double rampUpScale = distance/4;
+        max = power* 24;//48
+        double scaleBottom = power * 4;
+        if (max>distance-scaleBottom){
+            max = (distance-scaleBottom)*.75;
+        }
         runWithEncoders();
-        int counts = (int) ((distance / wheelCircumference) * countsPerRotation * kFactor);
+        int counts = (int) ((distance / wheelCircumference) * countsPerRotation);
+        double rampUpScale = 6*power;
+        if(distance-rampUpScale-scaleBottom<max){
+            rampUpScale = distance-max-scaleBottom;
+        }
         double initialAngle = getHeading();
 
-        while (robot.frontLeftMotor.getCurrentPosition()>-counts) {
+        double distanceGone = 0;
+
+        while (distanceGone>-distance) {
             double distanceGoneBl = wheelCircumference * ((robot.backLeftMotor.getCurrentPosition()/kFactor)/countsPerRotation);
             double distanceGoneBr = wheelCircumference * ((robot.backRightMotor.getCurrentPosition()/kFactor)/countsPerRotation);
             double distanceGoneFl = wheelCircumference * ((robot.frontLeftMotor.getCurrentPosition()/kFactor)/countsPerRotation);
             double distanceGoneFr = wheelCircumference * ((robot.frontRightMotor.getCurrentPosition()/kFactor)/countsPerRotation);
 
-            double powerRaw = errorToPower(distance - (-distanceGoneFl), max, power, .05);
+            distanceGone = (-distanceGoneBl-distanceGoneFr+distanceGoneBr+distanceGoneFl)/4;
+
+            double powerRaw = errorToPower(distance - (-distanceGone), max, scaleBottom, power, .05);
             double anglePower = 0;//errorToPower(Math.abs(initialAngle-getHeading()), 5,.2, 0);
             if (-distanceGoneFl<rampUpScale){
-                powerRaw=errorToPower(-distanceGoneFl, rampUpScale, power, .05);
+                powerRaw=errorToPower(-distanceGone, rampUpScale, 0, power, .05);
             }
             setPowerOfMotorsTo(powerRaw + anglePower, -powerRaw + anglePower, -powerRaw - anglePower, powerRaw - anglePower);
 
@@ -238,46 +301,63 @@ public class AutonomousMethods extends LinearOpMode {
 
         }
         setAllMotorsTo(0);
-        //stopAndResetEncoders();
-        //sleep(250);
+        stopAndResetEncoders();
+        //sleep(1000);
     }
     //strafing right distance (inch) with power [0, 1]
     public void strafeRight(double power, double squares, double inches) {
         stopAndResetEncoders();
         double distance = squares*distPerSquare+inches;
-        max = power*48;
-        double rampUpScale = distance/4;
+        max = power* 24;//48
+        double scaleBottom = power * 4;
+        if (max>distance-scaleBottom){
+            max = distance-scaleBottom;
+        }
         runWithEncoders();
-        int counts = (int) ((distance / wheelCircumference) * countsPerRotation * kFactor);
+        int counts = (int) -((distance / wheelCircumference) * countsPerRotation);
+        double rampUpScale = 6*power;
+        if(distance-rampUpScale-scaleBottom<max){
+            rampUpScale = distance-max-scaleBottom;
+        }
         double initialAngle = getHeading();
 
-        while (robot.frontLeftMotor.getCurrentPosition()<counts) {
+        double distanceGone = 0;
+
+        while (distanceGone<distance) {
             double distanceGoneBl = wheelCircumference * ((robot.backLeftMotor.getCurrentPosition()/kFactor)/countsPerRotation);
             double distanceGoneBr = wheelCircumference * ((robot.backRightMotor.getCurrentPosition()/kFactor)/countsPerRotation);
             double distanceGoneFl = wheelCircumference * ((robot.frontLeftMotor.getCurrentPosition()/kFactor)/countsPerRotation);
             double distanceGoneFr = wheelCircumference * ((robot.frontRightMotor.getCurrentPosition()/kFactor)/countsPerRotation);
 
+            distanceGone = (-distanceGoneBl-distanceGoneFr+distanceGoneBr+distanceGoneFl)/4;
 
             double anglePower = 0;//errorToPower(Math.abs(initialAngle-getHeading()), 5,.2, 0);
-            double powerRaw = errorToPower(distance - distanceGoneFl, max, power, .05);
+            double powerRaw = errorToPower(distance - distanceGoneFl, max, scaleBottom, power, .05);
             if (distanceGoneFl<rampUpScale){
-                powerRaw=errorToPower(distanceGoneFl, rampUpScale, power, .05);
+                powerRaw=errorToPower(distanceGoneFl, rampUpScale, 0, power, .05);
             }
             setPowerOfMotorsTo(-powerRaw + anglePower, powerRaw + anglePower, powerRaw - anglePower, -powerRaw - anglePower);
 
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
-        //sleep(250);
+        //sleep(1000);
     }
     //moving diagonal distance (inch) with power [0, 1]
     public void diagonalRight(double power, double squares, double inches) {
         stopAndResetEncoders();
         double distance = squares*distPerSquare+inches;
-        max = power* 48;//48
+        max = power* 24;//48
+        double scaleBottom = power * 6;
+        if (max>distance+6+scaleBottom){
+            max = (distance-scaleBottom)*.75;
+        }
         runWithEncoders();
-        int counts = (int) ((distance / wheelCircumference) * countsPerRotation*kFactor);
-        double rampUpScale = distance/16;
+        int counts = (int) ((distance / wheelCircumference) * countsPerRotation);
+        double rampUpScale = 12*power;
+        if(distance-rampUpScale-scaleBottom<max){
+            rampUpScale = distance-max-scaleBottom;
+        }
         double initialAngle = getHeading();
 
         while (robot.frontLeftMotor.getCurrentPosition()<counts) {
@@ -287,10 +367,10 @@ public class AutonomousMethods extends LinearOpMode {
             double distanceGoneFr = wheelCircumference * (robot.frontRightMotor.getCurrentPosition()/countsPerRotation);
 
             double anglePower = 0;//errorToPower(Math.abs(initialAngle-getHeading()), 5,.1, 0);
-            double powerRaw = errorToPower(distance-distanceGoneFl, max, power, .1);
+            double powerRaw = errorToPower(distance-distanceGoneFl, max, scaleBottom, power, .1);
 
             if (distanceGoneFl<rampUpScale){
-                setPowerOfMotorsTo(0, errorToPower(distanceGoneFl, rampUpScale, power, .1),errorToPower(distanceGoneFl, rampUpScale, power, .1), 0);
+                setPowerOfMotorsTo(0, errorToPower(distanceGoneFl, rampUpScale, 0, power, .1),errorToPower(distanceGoneFl, rampUpScale, 0, power, .1), 0);
             }
             else {
                 setPowerOfMotorsTo(0 - anglePower, powerRaw - anglePower, powerRaw + anglePower, 0 + anglePower);
@@ -304,10 +384,17 @@ public class AutonomousMethods extends LinearOpMode {
     public void diagonalLeft(double power, double squares, double inches) {
         stopAndResetEncoders();
         double distance = squares*distPerSquare+inches;
-        max = power* 48;//48
+        max = power* 24;//48
+        double scaleBottom = power * 6;
+        if (max>distance+6+scaleBottom){
+            max = (distance-scaleBottom)*.75;
+        }
         runWithEncoders();
-        int counts = (int) ((distance / wheelCircumference) * countsPerRotation*kFactor);
-        double rampUpScale = distance/16;
+        int counts = (int) -((distance / wheelCircumference) * countsPerRotation);
+        double rampUpScale = 12*power;
+        if(distance-rampUpScale-scaleBottom<max){
+            rampUpScale = distance-max-scaleBottom;
+        }
         double initialAngle = getHeading();
 
         while (robot.frontLeftMotor.getCurrentPosition()<counts) {
@@ -317,10 +404,10 @@ public class AutonomousMethods extends LinearOpMode {
             double distanceGoneFr = wheelCircumference * (robot.frontRightMotor.getCurrentPosition()/countsPerRotation);
 
             double anglePower = 0;//errorToPower(Math.abs(initialAngle-getHeading()), 5,.1, 0);
-            double powerRaw = errorToPower(distance-distanceGoneFr, max, power, .1);
+            double powerRaw = errorToPower(distance-distanceGoneFr, max, 6, power, .1);
 
             if (distanceGoneFr<rampUpScale){
-                setPowerOfMotorsTo(errorToPower(distanceGoneFr, rampUpScale, power, .1), 0, 0, errorToPower(distanceGoneFr, rampUpScale, power, .1));
+                setPowerOfMotorsTo(errorToPower(distanceGoneFr, rampUpScale, 0,power, .1), 0, 0, errorToPower(distanceGoneFr, rampUpScale,0, power, .1));
             }
             else {
                 setPowerOfMotorsTo(powerRaw - anglePower, 0 - anglePower, 0 + anglePower, powerRaw + anglePower);
@@ -333,27 +420,33 @@ public class AutonomousMethods extends LinearOpMode {
     //going to any angle
     public void toAngle(double angle, double speed){
         runWithEncoders();
-        double scale = 180*speed;
+        double scale = 90*speed;
         double calcAngle = getHeading()-angle;
+        //if(calcAngle>180){
+        //    calcAngle=-(360-calcAngle);
+        //}
+        //else if (calcAngle<180){
+        //    calcAngle = -(360+calcAngle);
+        //}
         boolean right = calcAngle<0;
         double power;
         if (right){
             while (calcAngle<0){
-                power = errorToPower(-calcAngle, scale, speed, .05);
+                power = errorToPower(-calcAngle, scale, 3*speed, speed, .05);
                 setPowerOfMotorsTo(power, power , -power , -power );
                 calcAngle = adjust(getHeading()-angle);
             }
         }
         else {
             while (calcAngle>0){
-                power = errorToPower(Math.abs(calcAngle), scale, speed, .05);
+                power = errorToPower(Math.abs(calcAngle),  scale, 5*speed, speed, .05);
                 setPowerOfMotorsTo(-power, -power , power , power );
                 calcAngle = adjust(getHeading()-angle);
             }
         }
         setAllMotorsTo(0);
         stopAndResetEncoders();
-        //sleep(250);
+        sleep(100);
     }
     //goes to a position and angle on the field
     public void goToPosition(double angle, double currentX, double currentY, double x, double y) {
@@ -393,8 +486,8 @@ public class AutonomousMethods extends LinearOpMode {
         while(robot.backLeftMotor.isBusy()||robot.backRightMotor.isBusy()||robot.frontLeftMotor.isBusy()||robot.frontRightMotor.isBusy()){
             double distanceGoneX = (wheelCircumference) * (robot.backLeftMotor.getCurrentPosition()/countsPerRotation);
             double distanceGoneY = (wheelCircumference) * (robot.backRightMotor.getCurrentPosition()/countsPerRotation);
-            double powerX = errorToPower(deltaX2-distanceGoneX, 24, deltaX2 / scaleFactor, .05);
-            double powerY = errorToPower(deltaY2-distanceGoneY, 24, deltaY2 / scaleFactor, .05);
+            double powerX = errorToPower(deltaX2-distanceGoneX, 24, 12, deltaX2 / scaleFactor, .05);
+            double powerY = errorToPower(deltaY2-distanceGoneY, 24, 12, deltaY2 / scaleFactor, .05);
             setPowerOfMotorsTo(powerY, powerX, powerX, powerY);
             if (deltaX2-distanceGoneX<=.25){
                 break;
@@ -432,16 +525,17 @@ public class AutonomousMethods extends LinearOpMode {
     //resets all wheel encoders to 0
     public void stopAndResetEncoders() {
         robot.backLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.frontLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.backRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.frontRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.frontLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
     }
     //set mode to run with encoders
     public void runWithEncoders() {
         robot.backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        robot.backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.frontLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
     //set mode to run without encoders
     public void runWithoutEncoders() {
@@ -469,6 +563,19 @@ public class AutonomousMethods extends LinearOpMode {
         Orientation angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         return -angles.firstAngle-resetAngle; // left [0,-180] right[0,180]
     }
+    public double getHeading2() {
+        Orientation angles = robot.imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        return -angles.firstAngle-resetAngle2; // left [0,-180] right[0,180]
+    }
+    public double getPosx() {
+        Position pos = robot.imu.getPosition();
+        return pos.x;
+
+    }
+    public double getAccel() {
+        Acceleration accel = robot.imu.getAcceleration();
+        return accel.xAccel;
+    }
     //adjusting heading on a scale of [-180,180]
     public double adjust(double angle) {
         if (angle>180){
@@ -480,14 +587,17 @@ public class AutonomousMethods extends LinearOpMode {
         return angle;
     }
     //takes error and finds appropriate speed
-    public double errorToPower(double error, double scale, double maxValue, double minValue){
+    public double errorToPower(double error, double scale, double scaleBottom, double maxValue, double minValue){
         //proportional
         if(error<0){
             error=0;
         }
-        double speed = ((error/scale)*(maxValue-minValue))+minValue;
-        if (speed>maxValue){
-            speed = maxValue;
+        double speed = minValue;
+        if(error>scaleBottom) {
+            speed = (((error - scaleBottom) / scale) * (maxValue - minValue) + minValue);
+        }
+        if(speed>maxValue){
+            speed=maxValue;
         }
         return speed;
     }
@@ -516,7 +626,7 @@ public class AutonomousMethods extends LinearOpMode {
             controlIndexServo(.575);
             controlIndexServo(1);
             if(x>1) {
-                sleep(400);
+                sleep(250);//400
             }
         }
     }
@@ -562,7 +672,7 @@ public class AutonomousMethods extends LinearOpMode {
     public void dropWobbleGoal(){
         controlArmServo(1);//drop
         sleep(250);
-        controlClawServo(.7);//open
+        controlClawServo(.8);//open
         controlArmServo(0);//up
         sleep(500);
     }

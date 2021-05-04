@@ -64,7 +64,7 @@ public class Teleop2 extends LinearOpMode {
             shoot();
             powerShot();
 
-            goToPosition();
+            //goToPosition();
             updatePosition();
             resetAngle();
 
@@ -90,10 +90,10 @@ public class Teleop2 extends LinearOpMode {
         method.runWithEncoders();
         if (gamepad1.right_stick_button&&!leftStick){
             if (multiplier==1){
-                multiplier=10;
+                multiplier = .25;
             }
             else {
-                multiplier=1;
+                multiplier = 1;
             }
             leftStick = true;
         }
@@ -104,19 +104,35 @@ public class Teleop2 extends LinearOpMode {
         double rotationValue = 0;
         double stickX = 0;
         double stickY = 0;
+
         if(Math.abs(gamepad1.right_stick_x)>.05) {
             rotationValue = gamepad1.right_stick_x;
+        }
+        else if(gamepad1.dpad_left){
+            rotationValue = -.2;
+        }
+        else if(gamepad1.dpad_right){
+            rotationValue = .2;
+        }
+        else{
+            rotationValue=0;
         }
         if(Math.abs(gamepad1.left_stick_x)>.05) {
             stickX = gamepad1.left_stick_x;
         }
+        else {
+            stickX=0;
+        }
         if(Math.abs(gamepad1.left_stick_y)>.05) {
             stickY = -gamepad1.left_stick_y;
+        }
+        else {
+            stickY=0;
         }
         double gyroAngle = method.getHeading() * Math.PI / 180; //Converts gyroAngle into radians
 
         //Robot Centric
-        //gyroAngle = 0;
+        //gyroAngle = Math.PI / 2;
 
         //inverse tangent of game-pad stick y/ game-pad stick x = angle of joystick
         double joystickAngle = Math.atan2(stickY, stickX);
@@ -137,10 +153,29 @@ public class Teleop2 extends LinearOpMode {
         if (yComponent + rotationValue > 1 && yComponent + rotationValue > scaleFactor) {
             scaleFactor = Math.abs(yComponent + rotationValue);
         }
-        method.robot.frontLeftMotor.setPower(((xComponent + rotationValue) / scaleFactor)/multiplier);
-        method.robot.backLeftMotor.setPower(((yComponent + rotationValue) / scaleFactor)/multiplier);
-        method.robot.backRightMotor.setPower(((xComponent - rotationValue) / scaleFactor)/multiplier);
-        method.robot.frontRightMotor.setPower(((yComponent - rotationValue) / scaleFactor)/multiplier);
+        //double deltaYMagnitude = magnitude-prevMagnitude;
+        //if(deltaYMagnitude/method.runtime2.seconds()>1&&!accelerating){
+        //    method.runtime3.reset();
+        //    accelerating = true;
+        //}
+        //prevYMagnitude = magnitude;
+
+
+        //if(accelerating = true){
+        //    multiplier = method.runtime3.seconds()/magnitude;
+        //    prevMagnitude=magnitude*multiplier;
+        //    if (multiplier>1){
+        //        accelerating = false;
+        //    }
+        // }
+        //else{
+        //    multiplier = 1;
+        //}
+        method.robot.frontLeftMotor.setPower((((xComponent + rotationValue) / scaleFactor)*multiplier)*multiplier);
+        method.robot.backLeftMotor.setPower((((yComponent + rotationValue) / scaleFactor)*multiplier)*multiplier);//y
+        method.robot.backRightMotor.setPower((((xComponent - rotationValue) / scaleFactor)*multiplier)*multiplier);//x
+        method.robot.frontRightMotor.setPower((((yComponent - rotationValue) / scaleFactor)*multiplier)*multiplier);
+        method.runtime2.reset();
     }
 
     public void shooter(){
@@ -187,14 +222,14 @@ public class Teleop2 extends LinearOpMode {
         if(gamepad1.right_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.shoot(-17, method.shooterPower);
+            method.shoot(-23, method.shooterPower);
         }
     }
     public void powerShot(){
         if(gamepad1.left_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.powerShot(10, 16, 20, method.powerShotPower, method.shooterPower);
+            method.powerShot(-14, -9, -5, method.powerShotPower, method.shooterPower);
         }
     }
 

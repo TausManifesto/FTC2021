@@ -33,18 +33,28 @@ public class Test extends AutonomousMethods {
         int a = 0;
         controlBlocker(.4);
 
-        while (true){
+        strafeRight(.5, 1, 0);
+
+        while (opModeIsActive()){
             //sleep(5000);
             //a++;
-            //takePic();
+            //picture();
             //numRings = findNumRings(bmp);
             //bmp.recycle();
             //dashboardTelemetry.addData("rings "+a, numRings);
             //dashboardTelemetry.update();
-            //forward(.5, 1,0);
-            //strafeLeft(.5,1,0);
-            //backward(.5, 1,0);
-            //strafeRight(.5,1,0);
+            //forward(.5, 1,18);
+            //toAngle(90, 1);
+            //forward(.5, 1,18);
+            //toAngle(180, 1);
+            //forward(.5, 1,18);
+            //toAngle(-90, 1);
+            //forward(.5, 1,18);
+            //toAngle(0, 1);
+
+            //strafeLeft(.5,1,18);
+            //backward(.5, 1,18);
+            //strafeRight(.5,1,18);
         }
 
 

@@ -7,6 +7,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -26,9 +27,10 @@ public class Hardware {
     public DcMotor intake = null;
     public DcMotor intake2 = null;
     public DcMotorEx shooter = null;
+    public DistanceSensor distance = null;
     public boolean encoder;
     public BNO055IMU imu; //inertial measurement unit
-
+    public BNO055IMU imu2; //inertial measurement unit
 
     // Other variable names
     HardwareMap hwMap;
@@ -60,6 +62,7 @@ public class Hardware {
         intake = hwMap.dcMotor.get("intake");
         intake2 = hwMap.dcMotor.get("intake2");
         shooter = hwMap.get(DcMotorEx.class, "shooter");
+        distance = hwMap.get(DistanceSensor.class, "dist");
 
 
         // Initialize Motors
@@ -132,8 +135,25 @@ public class Hardware {
 
         parameters.mode = BNO055IMU.SensorMode.IMU; //inertial measurement unit
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES; //angle unit to degrees
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
         parameters.loggingEnabled = false; //will log values if true
         imu.initialize(parameters); //initializing using above parameters
+
+        while(!imu.isGyroCalibrated()){
+        }
+
+        imu2 = hwMap.get(BNO055IMU.class, "imu2");
+
+        BNO055IMU.Parameters parameters2 = new BNO055IMU.Parameters();
+
+        parameters2.mode = BNO055IMU.SensorMode.IMU; //inertial measurement unit
+        parameters2.angleUnit = BNO055IMU.AngleUnit.DEGREES; //angle unit to degrees
+        parameters2.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters2.loggingEnabled = false; //will log values if true
+        imu2.initialize(parameters2); //initializing using above parameters
+
+        while(!imu2.isGyroCalibrated()){
+        }
 
         //Define Servos
     }

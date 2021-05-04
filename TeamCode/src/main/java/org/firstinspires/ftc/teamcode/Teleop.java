@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 
 @TeleOp(name = "Double Driver", group = "Taus")
@@ -30,6 +31,9 @@ public class Teleop extends LinearOpMode {
     boolean accelerating = true;
     boolean isYPressed = false;
     boolean isBlockerDown = true;
+    boolean RingIn = false;
+    boolean IntakingRing = true;
+    double rings = 0;
 
     double multiplier = 1;
     double speedFactor = 1;
@@ -37,13 +41,39 @@ public class Teleop extends LinearOpMode {
     double previousX = 0;
     double prevYMagnitude;
     boolean firstShot = true;
+    boolean intakingInitially;
 
     @Override
     public void runOpMode() {
+
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        Telemetry dashboardTelemetry = dashboard.getTelemetry();
+
         method.robot.initializeHardware(hardwareMap);
         telemetry.addLine(method.magic8());
         telemetry.update();
+        dashboardTelemetry.addLine("ready");
+        dashboardTelemetry.update();
         method.robot.shooter.setVelocityPIDFCoefficients(method.p,method.i,method.d,method.f);
+        method.resetAngle = method.getHeading();
+        while(!isStarted()) {
+            telemetry.addData("system", method.robot.imu.getSystemStatus());
+            telemetry.addData("status", method.robot.imu.getCalibrationStatus());
+            // Get the calibration data
+            //BNO055IMU.CalibrationData calibrationData = robot.imu.readCalibrationData();
+
+            // Save the calibration data to a file. You can choose whatever file
+            // name you wish here, but you'll want to indicate the same file name
+            // when you initialize the IMU in an opmode in which it is used. If you
+            // have more than one IMU on your robot, you'll of course want to use
+            // different configuration file names for each.
+            //String filename = "AdafruitIMUCalibration.json";
+            //File file = AppUtil.getInstance().getSettingsFile(filename);
+            //ReadWriteFile.writeFile(file, calibrationData.serialize());
+            //telemetry.log().add("saved to '%s'", filename);
+            telemetry.update();
+        }
+
         waitForStart();
         method.setShooterPower(method.shooterPower);
         method.controlIndexServo(1);
@@ -51,8 +81,7 @@ public class Teleop extends LinearOpMode {
         //method.controlArmServo(1);//drop
         //sleep(250);
         //method.controlClawServo(.7);//open
-        FtcDashboard dashboard = FtcDashboard.getInstance();
-        Telemetry dashboardTelemetry = dashboard.getTelemetry();
+
 
         dashboardTelemetry.addLine("starting");
         dashboardTelemetry.update();
@@ -68,28 +97,35 @@ public class Teleop extends LinearOpMode {
             blocker();
 
             shoot();
+            toAngle();
             powerShot();
 
             //goToPosition();
-            updatePosition();
+            //updatePosition();
             resetAngle();
+            ringIn();
 
             telemetry.addData("angle", (int)method.getHeading());
             telemetry.addData("target", (int)method.shooterRpm);
             telemetry.addData("rpm", (int)(method.robot.shooter.getVelocity()/28.0)*60);
-            telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
+            telemetry.addData("numRings", rings);
+            telemetry.addData("dist", method.robot.distance.getDistance(DistanceUnit.INCH));
+            //telemetry.addData("position", "[" +(int)method.currentXPosition + ", " + (int)method.currentYPosition + "]");
             //telemetry.addData("y", method.robot.backLeftMotor.getCurrentPosition());
             //telemetry.addData("x", method.robot.backRightMotor.getCurrentPosition());
             telemetry.update();
             telemetry.clear();
 
-            dashboardTelemetry.addData("current", (int)(method.robot.shooter.getVelocity()/28.0)*60);
-            dashboardTelemetry.addData("target", (int)method.shooterRpm);
-            dashboardTelemetry.addData("0", 0);
+            //dashboardTelemetry.addData("current", (int)(method.robot.shooter.getVelocity()/28.0)*60);
+            //dashboardTelemetry.addData("target", (int)method.shooterRpm);
+            //dashboardTelemetry.addData("0", 0);
 
-            dashboardTelemetry.addData("x", (int)method.currentXPosition);
-            dashboardTelemetry.addData("y", (int)method.currentYPosition);
-            dashboardTelemetry.update();
+            //dashboardTelemetry.addData("x", (int)method.currentXPosition);
+            //dashboardTelemetry.addData("y", (int)method.currentYPosition);
+
+            //dashboardTelemetry.addData("xpos", method.getPosx());
+            //dashboardTelemetry.addData("xvel", method.getAccel());
+            //dashboardTelemetry.update();
 
         }
 
@@ -118,11 +154,11 @@ public class Teleop extends LinearOpMode {
         if(Math.abs(gamepad1.right_stick_x)>.05) {
             rotationValue = gamepad1.right_stick_x;
         }
-        else if(gamepad1.dpad_left){
-            rotationValue = -.1;
+        else if(gamepad1.right_trigger>.1){
+            rotationValue = -.2;
         }
-        else if(gamepad1.dpad_right){
-            rotationValue = .1;
+        else if(gamepad1.left_trigger>.1){
+            rotationValue = .2;
         }
         else{
             rotationValue=0;
@@ -200,19 +236,19 @@ public class Teleop extends LinearOpMode {
                 shooterOn = false;
             }
         }
-        if(gamepad2.dpad_up && !dpadPressed){
+        if(gamepad1.dpad_up && !dpadPressed){
             method.shooterRpm +=50;
             method.shooterPower = (method.shooterRpm*28)/60.0;
             method.setShooterPower(method.shooterPower);
             dpadPressed=true;
         }
-        else if(gamepad2.dpad_down && !dpadPressed){
+        else if(gamepad1.dpad_down && !dpadPressed){
             method.shooterRpm-=50;
             method.shooterPower = (method.shooterRpm*28)/60.0;
             method.setShooterPower(method.shooterPower);
             dpadPressed=true;
         }
-        else if(gamepad2.dpad_right && !dpadPressed){
+        else if(gamepad1.dpad_right && !dpadPressed){
             method.shooterRpm=method.staticShooterRpm;
             method.shooterPower = (method.shooterRpm*28)/60.0;
             method.setShooterPower(method.shooterPower);
@@ -232,21 +268,46 @@ public class Teleop extends LinearOpMode {
             telemetry.update();
             method.setAllMotorsTo(0);
             if(firstShot){
-                method.toAngle(-19, .5);
+                method.toAngle(method.shootingAngle, 1);
                 firstShot=false;
             }
             else {
                 method.controlBlocker(0);
-                method.shoot(-19, method.shooterPower);
+                method.shoot(-method.shootingAngle, method.shooterPower);
+                rings=0;
             }
             method.controlBlocker(1);
+        }
+    }
+    public void updateShootingParameters(){
+        method.currentXPosition();
+    }
+
+    public void toAngle(){
+        if(gamepad2.right_bumper){
+            method.toAngle(-23, 1);
         }
     }
     public void powerShot(){
         if(gamepad2.left_trigger>.1) {
             telemetry.addLine(method.magic8());
             telemetry.update();
-            method.powerShot(10, 14, 18, method.powerShotPower, method.shooterPower);
+            method.powerShot(-15, -11, -6, method.powerShotPower, method.shooterPower);
+        }
+        if(gamepad2.dpad_left){
+            method.setShooterPower(method.powerShotPower);
+            method.toAngle(-15, .5);
+            method.setShooterPower(method.shooterPower);
+        }
+        if(gamepad2.dpad_right){
+            method.setShooterPower(method.powerShotPower);
+            method.toAngle(-11, .5);
+            method.setShooterPower(method.shooterPower);
+        }
+        if(gamepad2.dpad_up){
+            method.setShooterPower(method.powerShotPower);
+            method.toAngle(-6, .5);
+            method.setShooterPower(method.shooterPower);
         }
     }
 
@@ -279,9 +340,13 @@ public class Teleop extends LinearOpMode {
         method.robot.intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         if (Math.abs(gamepad2.left_stick_y)>.05) {
             method.setIntakePower(-gamepad2.left_stick_y);
+            IntakingRing=-gamepad2.left_stick_y>.05;
         }
         else{
             method.setIntakePower(0);
+        }
+        if (rings==3 && !gamepad2.left_stick_button){
+          method.setIntakePower(0);
         }
     }
     public void claw(){
@@ -324,6 +389,7 @@ public class Teleop extends LinearOpMode {
     public void resetAngle() {
         if (gamepad1.right_bumper) {
             method.resetAngle = method.getHeading() + method.resetAngle;
+            method.resetAngle2 = method.getHeading2() +method.resetAngle2;
         }
     }
     public void goToPosition(){
@@ -409,6 +475,28 @@ public class Teleop extends LinearOpMode {
             else if (method.currentXPosition>86){
                 method.currentXPosition = 86;
             }
+        }
+    }
+
+    public void ringIn(){
+        if(!RingIn&&method.robot.distance.getDistance(DistanceUnit.INCH)<1){
+            RingIn = true;
+            intakingInitially = IntakingRing;
+        }
+        if(RingIn&&method.robot.distance.getDistance(DistanceUnit.INCH)>1){
+            RingIn= false;
+            if(IntakingRing&&intakingInitially) {
+                rings++;
+            }
+            else if(!IntakingRing&&!intakingInitially);{
+                rings--;
+            }
+        }
+    }
+
+    public void shootingAutomatically(){
+        if (rings==3){
+            method.shoot(method.shootingAngle, method.shooterPower);
         }
     }
 
